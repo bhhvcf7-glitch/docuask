@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_user, get_session
@@ -9,6 +9,7 @@ from app.core.config import Settings, get_settings
 from app.db.models import User
 from app.db.repositories import get_document, list_documents
 from app.schemas.documents import DocumentPublic
+from app.services.ingestion import ingest_document
 from app.services.documents import (
     DuplicateDocument,
     InvalidUpload,
@@ -21,6 +22,7 @@ router = APIRouter(prefix="/documents", tags=["documents"])
 
 @router.post("", status_code=201, response_model=DocumentPublic)
 async def upload_document(
+    background_tasks: BackgroundTasks,
     file: Annotated[UploadFile, File()],
     user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_session)],
@@ -40,6 +42,7 @@ async def upload_document(
         raise HTTPException(status_code=413, detail="PDF exceeds upload limit") from exc
     except DuplicateDocument as exc:
         raise HTTPException(status_code=409, detail="Document already uploaded") from exc
+    background_tasks.add_task(ingest_document, document.id, user.id, settings)
     return DocumentPublic.model_validate(document)
 
 

@@ -1,6 +1,6 @@
 # DocuAsk
 
-Bilingual, citation-grounded document question answering. Project status: architecture and planning only (phase 0). No application functionality is implemented yet.
+Bilingual, citation-grounded document question answering. Project status: MVP phase 1 repository skeleton implemented; document processing, authentication, retrieval, and question answering are not yet implemented.
 
 ## Problem
 
@@ -36,7 +36,7 @@ flowchart LR
     API --> UI
 ```
 
-See [architecture](docs/architecture.md), [data model](docs/data-model.md), and [phase plan](docs/roadmap.md).
+See [architecture](docs/architecture.md), [data model](docs/data-model.md), [MVP phase plan](docs/mvp-plan.md), and the [original design roadmap](docs/roadmap.md). The original architecture describes the eventual system, not the current implementation.
 
 ## Technology decisions
 
@@ -46,7 +46,10 @@ Python 3.11, FastAPI, Pydantic v2, SQLAlchemy 2 async, Alembic, PostgreSQL, Redi
 
 | Item | State |
 | --- | --- |
-| Architecture and data design | Drafted, not implementation-validated |
+| Architecture and data design | Drafted; MVP plan supersedes original delivery order |
+| FastAPI /health and OpenAPI schema | Implemented, 2 local pytest tests passed |
+| Docker Compose API, PostgreSQL, Qdrant | Defined; runtime startup not verified in this environment |
+| GitHub Actions Ruff/pytest | Workflow added; remote run not yet verified |
 | API and authentication | Not implemented |
 | Upload and worker | Not implemented |
 | Retrieval and answer generation | Not implemented |
@@ -54,11 +57,28 @@ Python 3.11, FastAPI, Pydantic v2, SQLAlchemy 2 async, Alembic, PostgreSQL, Redi
 | Evaluation results | Not measured |
 | Deployment | Not deployed |
 
-**Do not infer a working application from this repository skeleton.** No evaluation metrics or live deployment URLs are claimed.
+**This is a working API skeleton, not yet a document Q&A application.** No evaluation metrics or live deployment URLs are claimed.
 
-## Planned local setup
+## Local development (phase 1)
 
-The eventual target is `make dev` to bring up API, worker, PostgreSQL, Redis, Qdrant and frontend through Docker Compose. This command is *not yet available* at phase 0. The executable environment and CI skeleton are scheduled for phase 1.
+Requires Python 3.11, Docker Engine with the Compose plugin, and Make (Git Bash or WSL on Windows).
+
+```bash
+make dev
+curl http://localhost:8000/health
+```
+
+Expected health JSON: `{"status":"ok"}`. OpenAPI docs: `http://localhost:8000/docs`. PostgreSQL and Qdrant are internal Compose services at this stage; the API does not access them yet.
+
+For local checks:
+
+```bash
+python -m pip install -e './backend[dev]'
+make lint
+make test
+```
+
+Stop containers with `make down`. Docker Compose startup was not executed in the authoring environment because Docker was unavailable; verify it locally. Phase 2 will replace the current local-only PostgreSQL credentials with a settings-driven configuration.
 
 ## Evaluation table
 
@@ -81,4 +101,4 @@ Demo GIF: pending first usable release.
 
 ## License
 
-Not selected yet; no license grant is implied.
+MIT license is planned for MVP phase 2; no license grant is implied yet.

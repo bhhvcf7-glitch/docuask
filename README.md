@@ -28,8 +28,10 @@ Requirements: Python 3.11, Docker Desktop with Compose and enough disk space for
 ```powershell
 Copy-Item .env.example .env
 notepad .env
-docker compose up --build -d
-docker compose exec -T api python -m alembic -c alembic.ini upgrade head
+docker compose up -d postgres qdrant
+docker compose build api
+docker compose run --rm --no-deps api python -m alembic -c alembic.ini upgrade head
+docker compose up -d api
 ```
 
 Set unique `POSTGRES_PASSWORD` and `JWT_SECRET` in `.env` before starting. `JWT_SECRET` must contain at least 32 characters. No secrets should be committed.

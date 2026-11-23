@@ -19,8 +19,10 @@ Do not commit your credentials.
 
 ```powershell
 git pull origin main
-docker compose up --build -d
-docker compose exec -T api python -m alembic -c alembic.ini upgrade head
+docker compose up -d postgres qdrant
+docker compose build api
+docker compose run --rm --no-deps api python -m alembic -c alembic.ini upgrade head
+docker compose up -d api
 py -3.11 -m pip install -e "./backend[dev]"
 py -3.11 scripts/smoke_docker.py
 ```

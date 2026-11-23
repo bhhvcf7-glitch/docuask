@@ -37,6 +37,12 @@ services:
         condition: service_healthy
       qdrant:
         condition: service_started
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/ready', timeout=5).close()"]
+      interval: 15s
+      timeout: 8s
+      start_period: 90s
+      retries: 3
     restart: unless-stopped
 
   postgres:

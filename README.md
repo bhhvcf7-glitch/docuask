@@ -71,7 +71,8 @@ Events are `token` (`{"text":"..."}`), `citations` (`{"sources":[{"number":1,"ch
 
 ## Tests
 
-The new HTTP smoke integration test uses real PostgreSQL and Qdrant with deterministic stand-ins for embeddings and LLM generation. This is not a full Docker/Ollama test; see [smoke test and React setup](docs/local-smoke.md).\n\n
+The new HTTP smoke integration test uses real PostgreSQL and Qdrant with deterministic stand-ins for embeddings and LLM generation. This is not a full Docker/Ollama test; see [smoke test and React setup](docs/local-smoke.md).
+
 ```bash
 python -m pip install -e './backend[dev]'
 python -m ruff check backend
@@ -90,7 +91,7 @@ Run Alembic upgrade before starting the updated API. Migration 0002 normalizes e
 
 ## V2 Phase 2: shared resources
 
-During FastAPI lifespan startup, DocuAsk creates one async SQLAlchemy engine/sessionmaker, one Qdrant client, and one vector index. It checks the collection and preloads multilingual-e5-small once per worker; shutdown closes the client and disposes the engine. Ingestion and search use these shared resources rather than opening clients for every request. Startup requires Postgres and Qdrant to be reachable. Set `PRELOAD_EMBEDDINGS=false` to defer model loading for CI or constrained local development; the model is then loaded on first embedding request and shared via a cached loader. The production default remains `true`. With multiple Uvicorn workers, each worker owns its own resources and model instance.
+During FastAPI lifespan startup, DocuAsk creates one async SQLAlchemy engine/sessionmaker, one Qdrant client, and one vector index. It checks the collection and preloads multilingual-e5-small once per worker; shutdown closes the client and disposes the engine. Ingestion and search use these shared resources rather than opening clients for every request. Startup requires Postgres and Qdrant to be reachable. Set `PRELOAD_EMBEDDINGS=false` to defer model loading for CI or constrained local development; the model is then loaded on first embedding request and shared via a cached loader. The runtime default remains `true`; CI sets `PRELOAD_EMBEDDINGS=false`. With multiple Uvicorn workers, each worker owns its own resources and model instance.
 
 Citations now use short `[1]` or `[2]` tokens in the prompt and model output. The server maps each accepted source number back to its retrieved chunk ID; it does not trust source identifiers supplied by the model. Citation relevance and factual support are not yet measured.
 

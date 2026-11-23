@@ -65,12 +65,12 @@ def chunk_pages(
         if page_number < 1:
             raise ValueError("Page numbers are one-based")
 
-        def append(text: str) -> None:
+        def append(text: str, number: int) -> None:
             if text:
                 chunks.append(
                     TextChunk(
                         ordinal=len(chunks),
-                        page_number=page_number,
+                        page_number=number,
                         original_text=text,
                         normalized_text=normalize_arabic(text),
                     )
@@ -81,11 +81,11 @@ def chunk_pages(
             current = ""
             for unit in _units(paragraph, max_chars):
                 if current and len(current) + 1 + len(unit) > max_chars:
-                    append(current)
+                    append(current, page_number)
                     current = _overlap(current, overlap_chars)
                     while current and len(current) + 1 + len(unit) > max_chars:
                         current = " ".join(current.split()[1:])
                 current = f"{current} {unit}".strip()
-            append(current)
+            append(current, page_number)
 
     return chunks

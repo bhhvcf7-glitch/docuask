@@ -1,6 +1,6 @@
 # DocuAsk
 
-Bilingual, citation-grounded document question answering. Project status: MVP phase 3 database schema and migrations implemented. Authentication, ingestion, retrieval and QA are not yet implemented.
+Bilingual, citation-grounded document question answering. Project status: MVP phase 4 authentication implemented. PDF upload, ingestion, retrieval and QA are not yet implemented.
 
 ## Problem
 
@@ -54,7 +54,8 @@ Python 3.11, FastAPI, Pydantic v2, SQLAlchemy 2 async, Alembic, PostgreSQL, Redi
 | MIT LICENSE | Added |
 | SQLAlchemy users/documents/chunks | Implemented; database constraints and tenant-scoped reads tested in CI |
 | Alembic upgrade/downgrade | Migration supplied; CI checks both directions |
-| API and authentication | Not implemented |
+| Auth registration, login, /auth/me | Implemented; see GitHub Actions for test status |
+| Argon2id passwords and JWT | Implemented; no refresh tokens yet |
 | Upload and worker | Not implemented |
 | Retrieval and answer generation | Not implemented |
 | UI | Not implemented |
@@ -63,9 +64,9 @@ Python 3.11, FastAPI, Pydantic v2, SQLAlchemy 2 async, Alembic, PostgreSQL, Redi
 
 **This is an API and database skeleton, not yet a document Q&A application.** No evaluation metrics or live deployment URLs are claimed.
 
-## Local development (phase 3)
+## Local development (phase 4)
 
-Requires Python 3.11, Docker Engine with the Compose plugin, and Make (Git Bash or WSL on Windows). Create a local env file before starting the stack:
+Requires Python 3.11, Docker Engine with the Compose plugin, and Make (Git Bash or WSL on Windows). Create a local env file before starting the stack. Set both POSTGRES_PASSWORD and JWT_SECRET to independent random values (JWT_SECRET must be at least 32 characters):
 
 ```bash
 cp .env.example .env
@@ -76,6 +77,8 @@ curl http://localhost:8000/health
 ```
 
 Expected health JSON: `{"status":"ok"}`. OpenAPI docs: `http://localhost:8000/docs`. PostgreSQL and Qdrant are internal Compose services at this stage; the API does not access them yet.
+
+The new endpoints are `POST /auth/register` (201), `POST /auth/login` (JWT access token), and `GET /auth/me` (Bearer token required). Registration requires at least 12 password characters. Email addresses are case-folded at the API boundary; existing pre-normalization database records should be migrated before accepting public registrations. Token lifetime defaults to 30 minutes. There is no refresh-token or login rate-limiting support yet, and this MVP must not be exposed to the public internet without those controls.
 
 For local checks:
 
@@ -102,7 +105,7 @@ The planned comparison will be populated only after local runs over a versioned 
 
 ## Known limitations
 
-Database schema now implemented; future architecture remains a design. Email case normalization and JWT authentication arrive in phase 4; per-user deduplication in phase 5. PDF text highlighting is not guaranteed by character offsets alone: precise text-layer spans or bounding-box mapping must be retained during extraction. OCR text alignment will need a separate mapping and confidence tracking. LLM citations require backend validation and cannot prove every individual claim without further evidence checks.
+Database schema now implemented; future architecture remains a design. Email normalization and JWT access authentication are implemented; per-user upload deduplication arrives in phase 5. PDF text highlighting is not guaranteed by character offsets alone: precise text-layer spans or bounding-box mapping must be retained during extraction. OCR text alignment will need a separate mapping and confidence tracking. LLM citations require backend validation and cannot prove every individual claim without further evidence checks.
 
 ## Demo
 

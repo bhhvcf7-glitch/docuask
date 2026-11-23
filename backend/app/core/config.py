@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import SecretStr
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -16,6 +16,16 @@ class Settings(BaseSettings):
     postgres_user: str = "docuask"
     postgres_password: SecretStr | None = None
     qdrant_url: str = "http://localhost:6333"
+    jwt_secret: SecretStr | None = None
+    access_token_minutes: int = Field(default=30, ge=1, le=1440)
+
+    @model_validator(mode="after")
+    def validate_jwt_secret(self) -> "Settings":
+        if self.jwt_secret is not None and len(self.jwt_secret.get_secret_value()) < 32:
+            raise ValueError("JWT_SECRET must contain at least 32 characters")
+        if self.app_env == "production" and self.jwt_secret is None:
+            raise ValueError("JWT_SECRET is required in production")
+        return self
 
 
 @lru_cache

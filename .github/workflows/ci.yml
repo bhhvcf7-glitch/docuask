@@ -31,6 +31,7 @@ jobs:
       POSTGRES_USER: docuask
       POSTGRES_PASSWORD: ci-only-password
       POSTGRES_DB: docuask
+      PRELOAD_EMBEDDINGS: "false"
       RUN_DB_TESTS: "1"
       RUN_VECTOR_TESTS: "1"
       QDRANT_URL: http://localhost:6333

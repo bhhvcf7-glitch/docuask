@@ -1,8 +1,8 @@
 import io
 import os
-import re
 from collections.abc import AsyncIterator
 from pathlib import Path
+from types import SimpleNamespace
 from uuid import UUID, uuid4
 
 import httpx
@@ -13,11 +13,12 @@ from reportlab.pdfgen import canvas
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from app.api.dependencies import get_session
+from app.api.dependencies import get_resources, get_session
 from app.core.config import Settings, get_settings
 from app.db.models import User
 from app.db.session import database_url
 from app.main import app
+from app.retrieval.vectors import VectorIndex
 
 pytestmark = [
     pytest.mark.asyncio,
@@ -40,10 +41,9 @@ class FixedEmbeddings:
 
 class CitingProvider:
     async def stream(self, messages):
-        match = re.search(r"\[source:([a-f0-9-]{36})\]", messages[0]["content"])
-        assert match is not None
+        assert "[1]" in messages[0]["content"]
         yield "The annual report records revenue. "
-        yield f"[source:{match.group(1)}]"
+        yield "[1]"
 
 
 def sample_pdf() -> bytes:
@@ -88,9 +88,12 @@ async def test_upload_to_cited_sse_answer_and_cross_user_isolation(
         async with sessions() as session:
             yield session
 
-    monkeypatch.setattr("app.services.ingestion.E5Embeddings", FixedEmbeddings)
-    monkeypatch.setattr("app.services.search.E5Embeddings", FixedEmbeddings)
     monkeypatch.setattr("app.api.routes.qa.make_provider", lambda value: CitingProvider())
+    index = VectorIndex(qdrant, settings.qdrant_collection, 3)
+    await index.ensure_collection()
+    app.dependency_overrides[get_resources] = lambda: SimpleNamespace(
+        sessions=sessions, embeddings=FixedEmbeddings(), index=index,
+    )
     app.dependency_overrides[get_session] = db_session
     app.dependency_overrides[get_settings] = lambda: settings
     try:

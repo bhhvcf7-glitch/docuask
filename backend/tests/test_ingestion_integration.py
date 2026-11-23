@@ -82,7 +82,7 @@ async def test_background_ingestion_writes_page_numbered_chunks(tmp_path: Path) 
             assert "total revenue" in pieces[1].normalized_text
             assert len(index.points) == 2
 
-        await ingest_document(document_id, owner, settings)
+        await ingest_document(document_id, owner, settings, FakeEmbeddings(), index)
         async with sessions() as session:
             count = list((await session.scalars(
                 select(Chunk).where(Chunk.document_id == document_id)

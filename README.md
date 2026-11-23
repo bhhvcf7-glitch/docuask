@@ -12,7 +12,7 @@ Bilingual PDF question answering with citations. **MVP phase 8 and a minimal Rea
 | PDF text extraction, Arabic normalization, page-numbered chunks | Implemented |
 | Multilingual-e5-small dense indexing and owner-scoped retrieval | Implemented; semantic quality not yet benchmarked |
 | OpenAI-compatible / Ollama LLM providers | Implemented; external model inference not exercised in CI |
-| SSE grounded QA, validated chunk IDs, source page numbers | Implemented; provider and streaming behavior covered by mocks |
+| SSE grounded QA, numbered citations mapped to retrieved chunk IDs | Implemented; provider and streaming behavior covered by mocks |
 | Refusal for no/low-score evidence and model missing citations | Implemented; threshold not calibrated |
 | Client cancellation | Implemented with request-disconnect polling and async stream cleanup |
 | Minimal React UI | Implemented; CI TypeScript build and SSE parser tests |
@@ -67,7 +67,7 @@ Open `http://localhost:8000/docs`. Register with `POST /auth/register`, log in w
 curl -N -X POST http://localhost:8000/qa/ask -H "Authorization: Bearer YOUR_TOKEN" -H "Content-Type: application/json" -d '{"question":"What does this document say?","limit":5}'
 ```
 
-Events are `token` (`{"text":"..."}`), `citations` (`{"sources":[{"number":1,"chunk_id":"...","document_id":"...","filename":"...","page_number":2,"text":"..."}]}`), `refusal`, `error`, and `done`. The backend only emits numbered citations for IDs returned in its own retrieval results; invented IDs are dropped. Text is withheld until the provider supplies at least one valid citation, then streams incrementally. If no valid citation appears, the answer is refused. The backend cannot guarantee claim-by-claim faithfulness; evaluation is required.
+Events are `token` (`{"text":"..."}`), `citations` (`{"sources":[{"number":1,"chunk_id":"...","document_id":"...","filename":"...","page_number":2,"text":"..."}]}`), `refusal`, `error`, and `done`. The prompt labels retrieved passages [1], [2] and so on; the server maps those source numbers to authorized chunk UUIDs and page numbers. References outside that set are dropped. Text is withheld until the provider supplies at least one valid citation, then streams incrementally. If no valid citation appears, the answer is refused. The backend cannot guarantee claim-by-claim faithfulness; evaluation is required.
 
 ## Tests
 
@@ -87,6 +87,12 @@ This is a local-development MVP, not a public production service. There is no OC
 ## Upgrade notes
 
 Run Alembic upgrade before starting the updated API. Migration 0002 normalizes existing email addresses and creates a unique index on lower(email). If multiple accounts collide under lower(trim(email)), the migration stops: resolve them manually before retrying; no user records are merged automatically. Documents now track status_changed_at for stale-job recovery. PDF ingestion normalizes saved chunk text once, while questions are normalized at embedding time. /health is liveness; /ready checks PostgreSQL and Qdrant and is used by the container healthcheck. Model-specific relevance thresholds remain uncalibrated pending evaluation.
+
+## V2 Phase 2: shared resources
+
+During FastAPI lifespan startup, DocuAsk creates one async SQLAlchemy engine/sessionmaker, one Qdrant client, and one vector index. It checks the collection and preloads multilingual-e5-small once per worker; shutdown closes the client and disposes the engine. Ingestion and search use these shared resources rather than opening clients for every request. Startup requires Postgres and Qdrant to be reachable. Set `PRELOAD_EMBEDDINGS=false` to defer model loading for CI or constrained local development; the model is then loaded on first embedding request and shared via a cached loader. The production default remains `true`. With multiple Uvicorn workers, each worker owns its own resources and model instance.
+
+Citations now use short `[1]` or `[2]` tokens in the prompt and model output. The server maps each accepted source number back to its retrieved chunk ID; it does not trust source identifiers supplied by the model. Citation relevance and factual support are not yet measured.
 
 ## License
 

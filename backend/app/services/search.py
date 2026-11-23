@@ -1,6 +1,5 @@
 from uuid import UUID
 
-from qdrant_client import AsyncQdrantClient
 from qdrant_client.http.exceptions import ResponseHandlingException, UnexpectedResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,19 +24,11 @@ async def search_documents(
     embeddings: E5Embeddings | None = None,
     index: VectorIndex | None = None,
 ) -> list[dict]:
-    embedder = embeddings or E5Embeddings()
-    vector = await embedder.query(question)
+    if embeddings is None or index is None:
+        raise SearchUnavailable("Search resources are not initialized")
+    vector = await embeddings.query(question)
     try:
-        if index is None:
-            client = AsyncQdrantClient(url=settings.qdrant_url, timeout=20)
-            try:
-                store = VectorIndex(client, settings.qdrant_collection, embedder.dimension)
-                await store.ensure_collection()
-                hits = await store.search(user_id=user_id, vector=vector, limit=limit)
-            finally:
-                await client.close()
-        else:
-            hits = await index.search(user_id=user_id, vector=vector, limit=limit)
+        hits = await index.search(user_id=user_id, vector=vector, limit=limit)
     except (ResponseHandlingException, UnexpectedResponse, OSError) as exc:
         raise SearchUnavailable from exc
     return await _resolve(session, user_id, hits)

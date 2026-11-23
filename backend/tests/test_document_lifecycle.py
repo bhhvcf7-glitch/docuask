@@ -30,7 +30,7 @@ async def test_retry_and_delete_enforce_owner_and_remove_chunks(
     pdf.write_bytes(b"%PDF-test")
     cleaned = []
 
-    async def remove_vectors(settings, user_id, document_id):
+    async def remove_vectors(settings, user_id, document_id, index=None):
         cleaned.append((user_id, document_id))
 
     monkeypatch.setattr(lifecycle, "remove_document_vectors", remove_vectors)

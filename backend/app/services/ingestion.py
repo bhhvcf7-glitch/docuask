@@ -1,9 +1,8 @@
 from uuid import UUID
 
 import structlog
-from qdrant_client import AsyncQdrantClient
 from sqlalchemy import delete, func, update
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from starlette.concurrency import run_in_threadpool
 
 from app.core.config import Settings
@@ -23,9 +22,13 @@ async def ingest_document(
     settings: Settings,
     embeddings: E5Embeddings | None = None,
     index: VectorIndex | None = None,
+    sessions: async_sessionmaker[AsyncSession] | None = None,
 ) -> None:
-    engine = create_async_engine(database_url(settings), pool_pre_ping=True)
-    sessions = async_sessionmaker(engine, expire_on_commit=False)
+    # Tests can supply a separate session factory without loading the real model.
+    engine = None
+    if sessions is None:
+        engine = create_async_engine(database_url(settings), pool_pre_ping=True)
+        sessions = async_sessionmaker(engine, expire_on_commit=False)
     try:
         async with sessions() as session:
             claimed = await session.scalar(
@@ -71,24 +74,12 @@ async def ingest_document(
                 session.add_all(chunks)
                 await session.flush()
 
-            embedder = embeddings or E5Embeddings()
-            vectors = await embedder.documents([chunk.normalized_text for chunk in chunks])
-            if index is None:
-                client = AsyncQdrantClient(url=settings.qdrant_url, timeout=30)
-                try:
-                    store = VectorIndex(client, settings.qdrant_collection, embedder.dimension)
-                    await store.ensure_collection()
-                    await store.upsert(
-                        user_id=user_id, document_id=document_id,
-                        chunks=chunks, vectors=vectors,
-                    )
-                finally:
-                    await client.close()
-            else:
-                await index.ensure_collection()
-                await index.upsert(
-                    user_id=user_id, document_id=document_id, chunks=chunks, vectors=vectors
-                )
+            if embeddings is None or index is None:
+                raise RuntimeError("Ingestion resources are not initialized")
+            vectors = await embeddings.documents([chunk.normalized_text for chunk in chunks])
+            await index.upsert(
+                user_id=user_id, document_id=document_id, chunks=chunks, vectors=vectors
+            )
 
             async with sessions.begin() as session:
                 await session.execute(
@@ -102,7 +93,7 @@ async def ingest_document(
                 )
             log.info("pdf_ingestion_ready", document_id=str(document_id), chunks=len(chunks))
         except Exception as exc:
-            # The background task has no HTTP caller to report unexpected failures to.
+            # Unexpected failures must not leave documents permanently processing.
             log.exception("pdf_ingestion_failed", document_id=str(document_id))
             detail = (
                 str(exc)[:300] if isinstance(exc, ExtractionError)
@@ -121,4 +112,5 @@ async def ingest_document(
                     )
                 )
     finally:
-        await engine.dispose()
+        if engine is not None:
+            await engine.dispose()

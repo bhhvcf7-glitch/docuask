@@ -4,8 +4,9 @@ from uuid import UUID
 from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_current_user, get_session
+from app.api.dependencies import get_current_user, get_resources, get_session
 from app.core.config import Settings, get_settings
+from app.core.resources import AppResources
 from app.db.models import User
 from app.db.repositories import get_document, list_documents
 from app.schemas.documents import DocumentPublic
@@ -36,6 +37,7 @@ async def upload_document(
     user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_session)],
     settings: Annotated[Settings, Depends(get_settings)],
+    resources: Annotated[AppResources, Depends(get_resources)],
 ) -> DocumentPublic:
     owner_id = user.id
     try:
@@ -52,7 +54,11 @@ async def upload_document(
         raise HTTPException(status_code=413, detail="PDF exceeds upload limit") from exc
     except DuplicateDocument as exc:
         raise HTTPException(status_code=409, detail="Document already uploaded") from exc
-    background_tasks.add_task(ingest_document, document.id, owner_id, settings)
+
+    background_tasks.add_task(
+        ingest_document, document.id, owner_id, settings,
+        resources.embeddings, resources.index, resources.sessions,
+    )
     return DocumentPublic.model_validate(document)
 
 
@@ -84,10 +90,12 @@ async def retry_failed_document(
     user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_session)],
     settings: Annotated[Settings, Depends(get_settings)],
+    resources: Annotated[AppResources, Depends(get_resources)],
 ) -> DocumentPublic:
     try:
         document = await retry_document(
-            session, user_id=user.id, document_id=document_id, settings=settings
+            session, user_id=user.id, document_id=document_id,
+            settings=settings, index=resources.index,
         )
     except DocumentNotFound as exc:
         raise HTTPException(status_code=404, detail="Document not found") from exc
@@ -95,7 +103,11 @@ async def retry_failed_document(
         raise HTTPException(status_code=409, detail="Only failed documents can be retried") from exc
     except (VectorCleanupFailed, FileCleanupFailed) as exc:
         raise HTTPException(status_code=503, detail="Document retry is unavailable") from exc
-    background_tasks.add_task(ingest_document, document.id, user.id, settings)
+
+    background_tasks.add_task(
+        ingest_document, document.id, user.id, settings,
+        resources.embeddings, resources.index, resources.sessions,
+    )
     return DocumentPublic.model_validate(document)
 
 
@@ -105,10 +117,12 @@ async def remove_document(
     user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_session)],
     settings: Annotated[Settings, Depends(get_settings)],
+    resources: Annotated[AppResources, Depends(get_resources)],
 ) -> None:
     try:
         await delete_document(
-            session, user_id=user.id, document_id=document_id, settings=settings
+            session, user_id=user.id, document_id=document_id,
+            settings=settings, index=resources.index,
         )
     except DocumentNotFound as exc:
         raise HTTPException(status_code=404, detail="Document not found") from exc

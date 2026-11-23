@@ -10,6 +10,7 @@ from starlette.concurrency import run_in_threadpool
 
 from app.core.config import Settings
 from app.db.models import Chunk, Document
+from app.retrieval.vectors import VectorIndex
 
 log = structlog.get_logger(__name__)
 
@@ -43,14 +44,18 @@ def stored_path(settings: Settings, owner: UUID, document: Document) -> Path:
 
 
 async def remove_document_vectors(
-    settings: Settings, user_id: UUID, document_id: UUID
+    settings: Settings, user_id: UUID, document_id: UUID,
+    index: VectorIndex | None = None,
 ) -> None:
-    client = AsyncQdrantClient(url=settings.qdrant_url, timeout=15)
+    client = index.client if index is not None else AsyncQdrantClient(
+        url=settings.qdrant_url, timeout=15
+    )
     try:
-        if not await client.collection_exists(settings.qdrant_collection):
+        collection = index.collection if index is not None else settings.qdrant_collection
+        if not await client.collection_exists(collection):
             return
         await client.delete(
-            collection_name=settings.qdrant_collection,
+            collection_name=collection,
             points_selector=models.FilterSelector(filter=models.Filter(must=[
                 models.FieldCondition(
                     key="user_id", match=models.MatchValue(value=str(user_id))
@@ -64,11 +69,13 @@ async def remove_document_vectors(
     except (ResponseHandlingException, UnexpectedResponse, OSError, ValueError) as exc:
         raise VectorCleanupFailed from exc
     finally:
-        await client.close()
+        if index is None:
+            await client.close()
 
 
 async def retry_document(
-    session: AsyncSession, *, user_id: UUID, document_id: UUID, settings: Settings
+    session: AsyncSession, *, user_id: UUID, document_id: UUID, settings: Settings,
+    index: VectorIndex | None = None,
 ) -> Document:
     document = await session.scalar(
         select(Document)
@@ -82,7 +89,7 @@ async def retry_document(
     if not stored_path(settings, user_id, document).is_file():
         raise FileCleanupFailed
 
-    await remove_document_vectors(settings, user_id, document_id)
+    await remove_document_vectors(settings, user_id, document_id, index=index)
     await session.execute(
         delete(Chunk).where(Chunk.document_id == document_id, Chunk.user_id == user_id)
     )
@@ -95,7 +102,8 @@ async def retry_document(
 
 
 async def delete_document(
-    session: AsyncSession, *, user_id: UUID, document_id: UUID, settings: Settings
+    session: AsyncSession, *, user_id: UUID, document_id: UUID, settings: Settings,
+    index: VectorIndex | None = None,
 ) -> None:
     document = await session.scalar(
         select(Document)
@@ -108,7 +116,7 @@ async def delete_document(
         raise DocumentBusy
 
     path = stored_path(settings, user_id, document)
-    await remove_document_vectors(settings, user_id, document_id)
+    await remove_document_vectors(settings, user_id, document_id, index=index)
     await session.delete(document)
     await session.commit()
     try:

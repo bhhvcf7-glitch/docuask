@@ -6,12 +6,17 @@ from pydantic import ValidationError
 
 from app.core.config import Settings
 from app.schemas.qa import QuestionRequest
-from app.services.qa import CitationFilter, answer_events, refusal
+from app.services.qa import CitationFilter, answer_events, make_messages, refusal
 
 HIT = {
     "chunk_id": uuid4(), "document_id": uuid4(),
     "filename": "report.pdf", "page_number": 3,
     "text": "Revenue grew.", "score": 0.9,
+}
+SECOND = {
+    "chunk_id": uuid4(), "document_id": uuid4(),
+    "filename": "another.pdf", "page_number": 7,
+    "text": "Another passage.", "score": 0.85,
 }
 
 
@@ -40,19 +45,46 @@ def unpack(parts):
     return [(p.splitlines()[0][7:], json.loads(p.splitlines()[1][6:])) for p in parts]
 
 
+def test_prompt_uses_short_numbers_not_uuids() -> None:
+    prompt = make_messages("What?", [HIT, SECOND])[0]["content"]
+    assert "[1]" in prompt and "[2]" in prompt
+    assert str(HIT["chunk_id"]) not in prompt
+    assert str(SECOND["chunk_id"]) not in prompt
+
+
+def test_filter_keeps_original_source_numbers_and_ownership() -> None:
+    citations = CitationFilter([HIT, SECOND])
+    assert citations.push("Second [") == "Second "
+    assert citations.push("2], then [") == "[2], then "
+    assert citations.push("9] and [1] and [2].") == " and [1] and [2]."
+    assert citations.sources() == [
+        {
+            "number": 2, "chunk_id": str(SECOND["chunk_id"]),
+            "document_id": str(SECOND["document_id"]),
+            "filename": "another.pdf", "page_number": 7,
+            "text": "Another passage.",
+        },
+        {
+            "number": 1, "chunk_id": str(HIT["chunk_id"]),
+            "document_id": str(HIT["document_id"]),
+            "filename": "report.pdf", "page_number": 3,
+            "text": "Revenue grew.",
+        },
+    ]
+
+
 @pytest.mark.asyncio
-async def test_answer_stream_accepts_only_retrieved_chunk_ids() -> None:
-    valid = str(HIT["chunk_id"])
-    invalid = str(uuid4())
-    provider = FakeProvider(["Revenue [sou", f"rce:{valid}]",
-                             f" and [source:{invalid}]"])
+async def test_answer_stream_only_cites_retrieved_numbers() -> None:
+    provider = FakeProvider(["Revenue [", "1]", " but not [99]"])
     records = unpack([p async for p in answer_events(
         None, user_id=uuid4(), question="Revenue?", limit=5,
         settings=Settings(_env_file=None), provider=provider, search=search,
     )])
-    text = "".join(payload["text"] for kind, payload in records if kind == "token")
-    assert "[1]" in text and invalid not in text
-    assert [s["chunk_id"] for s in records[-2][1]["sources"]] == [valid]
+    visible = "".join(payload["text"] for kind, payload in records if kind == "token")
+    assert "[1]" in visible and "[99]" not in visible
+    assert [item["chunk_id"] for item in records[-2][1]["sources"]] == [
+        str(HIT["chunk_id"])
+    ]
     assert records[-2][1]["sources"][0]["page_number"] == 3
     assert records[-1][0] == "done"
     assert provider.closed
@@ -100,7 +132,7 @@ async def test_disconnect_closes_provider() -> None:
 
 @pytest.mark.asyncio
 async def test_closing_sse_generator_closes_llm_stream() -> None:
-    provider = FakeProvider([f"first [source:{HIT['chunk_id']}]", "second"])
+    provider = FakeProvider(["first [1]", "second"])
     stream = answer_events(
         None, user_id=uuid4(), question="What?", limit=5,
         settings=Settings(_env_file=None), provider=provider, search=search,
@@ -112,11 +144,24 @@ async def test_closing_sse_generator_closes_llm_stream() -> None:
 
 def test_invalid_citations_do_not_leak() -> None:
     citation = CitationFilter([HIT])
-    assert citation.push("hello [source:") == "hello "
-    assert citation.push(str(uuid4()) + "] end") == " end"
-    assert citation.push("[source:unfinished") == ""
+    assert citation.push("hello [") == "hello "
+    assert citation.push("42] end") == " end"
+    assert citation.push("[source:abc]") == ""
+    assert citation.push("[unfinished") == ""
     assert citation.finish() == ""
     assert citation.sources() == []
+
+
+def test_numeric_references_outside_retrieval_are_dropped() -> None:
+    citations = CitationFilter([HIT])
+    assert citations.push("[9999] [01] [0] [1]") == "   [1]"
+    assert [source["number"] for source in citations.sources()] == [1]
+
+
+def test_citation_filter_preserves_non_citation_brackets() -> None:
+    filter_ = CitationFilter([HIT])
+    assert filter_.push("A [note] and [1]") == "A [note] and [1]"
+    assert filter_.sources()[0]["number"] == 1
 
 
 def test_invalid_question_is_rejected() -> None:
@@ -124,6 +169,7 @@ def test_invalid_question_is_rejected() -> None:
         QuestionRequest(question="")
     with pytest.raises(ValidationError):
         QuestionRequest(question="valid", limit=11)
+
 
 @pytest.mark.asyncio
 async def test_uncited_model_answer_is_refused() -> None:

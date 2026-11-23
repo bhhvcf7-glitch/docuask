@@ -2,6 +2,7 @@ import io
 import os
 from collections.abc import AsyncIterator
 from pathlib import Path
+from types import SimpleNamespace
 from uuid import uuid4
 
 import httpx
@@ -10,7 +11,7 @@ from pydantic import SecretStr
 from pypdf import PdfWriter
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
-from app.api.dependencies import get_session
+from app.api.dependencies import get_resources, get_session
 from app.core.config import Settings, get_settings
 from app.db.session import database_url
 from app.main import app
@@ -43,6 +44,9 @@ async def api(tmp_path: Path) -> AsyncIterator[tuple[httpx.AsyncClient, Path]]:
                     async def test_session() -> AsyncIterator[AsyncSession]:
                         yield session
 
+                    app.dependency_overrides[get_resources] = lambda: SimpleNamespace(
+                        sessions=None, embeddings=None, index=None,
+                    )
                     app.dependency_overrides[get_session] = test_session
                     app.dependency_overrides[get_settings] = lambda: settings
                     try:

@@ -9,7 +9,7 @@ Bilingual PDF question answering with citations. **MVP phase 8 and a minimal Rea
 | FastAPI, PostgreSQL, Qdrant, Docker Compose | Implemented; local full-stack smoke test still required |
 | Argon2 login and JWT access | Implemented; casefolded email uniqueness enforced by migration |
 | Authenticated PDF upload, SHA-256 deduplication | Implemented; failed documents can retry, owner can delete |
-| PDF text extraction, Arabic normalization, page-numbered chunks | Implemented |
+| PDF text extraction, Arabic normalization, page-numbered chunks | Implemented; phase 3 prefers paragraph and Arabic/English sentence boundaries |
 | Multilingual-e5-small dense indexing and owner-scoped retrieval | Implemented; semantic quality not yet benchmarked |
 | OpenAI-compatible / Ollama LLM providers | Implemented; external model inference not exercised in CI |
 | SSE grounded QA, numbered citations mapped to retrieved chunk IDs | Implemented; provider and streaming behavior covered by mocks |
@@ -94,6 +94,10 @@ Run Alembic upgrade before starting the updated API. Migration 0002 normalizes e
 During FastAPI lifespan startup, DocuAsk creates one async SQLAlchemy engine/sessionmaker, one Qdrant client, and one vector index. It checks the collection and preloads multilingual-e5-small once per worker; shutdown closes the client and disposes the engine. Ingestion and search use these shared resources rather than opening clients for every request. Startup requires Postgres and Qdrant to be reachable. Set `PRELOAD_EMBEDDINGS=false` to defer model loading for CI or constrained local development; the model is then loaded on first embedding request and shared via a cached loader. The runtime default remains `true`; CI sets `PRELOAD_EMBEDDINGS=false`. With multiple Uvicorn workers, each worker owns its own resources and model instance.
 
 Citations now use short `[1]` or `[2]` tokens in the prompt and model output. The server maps each accepted source number back to its retrieved chunk ID; it does not trust source identifiers supplied by the model. Citation relevance and factual support are not yet measured.
+
+## V2 Phase 3: chunk boundaries
+
+`chunk_pages` emits separate chunks for separate paragraphs, even when both would fit together. Within an oversized paragraph, it packs complete sentences first and uses Arabic (`؟`, `،`, `؛`) and English (`.`, `?`, `!`, `,`, `;`, `:`) punctuation as preferred boundaries. It falls back to words when a sentence alone exceeds the maximum chunk size, and splits oversized individual words only when necessary. Overlap applies only when size forces a split, not across paragraphs or PDF pages. The existing `ordinal`, one-based `page_number`, `original_text` and `normalized_text` fields are unchanged. There is no migration. Sentence splitting is heuristic; abbreviations and extracted PDF layout can still produce imperfect boundaries. Chunking and retrieval accuracy are not yet measured.
 
 ## License
 

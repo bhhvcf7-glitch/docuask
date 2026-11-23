@@ -32,10 +32,12 @@ def test_long_page_has_bounded_overlapping_chunks() -> None:
         assert set(before.original_text.split()) & set(after.original_text.split())
 
 
-def test_paragraphs_and_page_boundaries_do_not_create_empty_chunks() -> None:
+def test_short_paragraphs_are_separate_even_when_they_fit_together() -> None:
     chunks = chunk_pages([(1, "First paragraph\n\nSecond paragraph"), (2, "  ")])
-    assert len(chunks) == 1
-    assert chunks[0].original_text == "First paragraph Second paragraph"
+    assert [chunk.original_text for chunk in chunks] == [
+        "First paragraph", "Second paragraph"
+    ]
+    assert [chunk.ordinal for chunk in chunks] == [0, 1]
 
 
 def test_bad_chunk_parameters_are_rejected() -> None:

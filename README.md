@@ -1,6 +1,6 @@
 # DocuAsk
 
-Bilingual PDF question answering with citations. **MVP phase 8 is implemented in code.** Authentication, upload, Arabic text extraction, CPU embeddings, Qdrant search, and streaming QA are present. No deployment or end-to-end evaluation metrics are claimed.
+Bilingual PDF question answering with citations. **MVP phase 8 and a minimal React frontend are implemented in code.** Authentication, upload, Arabic text extraction, CPU embeddings, Qdrant search, and streaming QA are present. No deployment or end-to-end evaluation metrics are claimed.
 
 ## Current capabilities
 
@@ -15,7 +15,8 @@ Bilingual PDF question answering with citations. **MVP phase 8 is implemented in
 | SSE grounded QA, validated chunk IDs, source page numbers | Implemented; provider and streaming behavior covered by mocks |
 | Refusal for no/low-score evidence and model missing citations | Implemented; threshold not calibrated |
 | Client cancellation | Implemented with request-disconnect polling and async stream cleanup |
-| Full deployed app and React UI | Not implemented |
+| Minimal React UI | Implemented (Arabic/English upload, chat, sources); CI build and tests pending verification |
+| Deployment | Not implemented |
 | Hit@k / MRR and latency benchmarks | Not measured |
 
 [Architecture](docs/architecture.md) · [MVP plan](docs/mvp-plan.md) · [Original roadmap](docs/roadmap.md)
@@ -68,6 +69,7 @@ Events are `token` (`{"text":"..."}`), `citations` (`{"sources":[{"number":1,"ch
 
 ## Tests
 
+The new HTTP smoke integration test uses real PostgreSQL and Qdrant with deterministic stand-ins for embeddings and LLM generation. This is not a full Docker/Ollama test; see [smoke test and React setup](docs/local-smoke.md).\n\n
 ```bash
 python -m pip install -e './backend[dev]'
 python -m ruff check backend
@@ -78,7 +80,7 @@ Integration tests need migrated PostgreSQL and `RUN_DB_TESTS=1`; Qdrant tests al
 
 ## Limitations
 
-This is a local-development MVP, not a public production service. There is no OCR, refresh token, rate limiting, durable queue, automatic ingestion recovery, cache, prompt-injection guarantee, PDF highlighting, or frontend. Cosine similarity threshold `QA_MIN_SCORE=0.45` is an uncalibrated heuristic. On cancellation the server closes the provider stream when possible, but providers may still bill for already processed tokens. Incomplete ingestion may require manual intervention. Do not expose the API publicly without hardening.
+This is a local-development MVP, not a public production service. There is no OCR, refresh token, rate limiting, durable queue, automatic ingestion recovery, cache, prompt-injection guarantee, PDF highlighting, or deployed frontend. Cosine similarity threshold `QA_MIN_SCORE=0.45` is an uncalibrated heuristic. On cancellation the server closes the provider stream when possible, but providers may still bill for already processed tokens. Incomplete ingestion may require manual intervention. Do not expose the API publicly without hardening.
 
 ## License
 

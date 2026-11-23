@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,7 +23,7 @@ async def register_user(session: AsyncSession, email: str, password: str) -> Use
         await session.commit()
     except IntegrityError as exc:
         await session.rollback()
-        if await session.scalar(select(User.id).where(User.email == email)) is not None:
+        if await session.scalar(select(User.id).where(func.lower(User.email) == email)) is not None:
             raise EmailAlreadyRegistered from exc
         raise
     await session.refresh(user)

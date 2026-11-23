@@ -16,6 +16,15 @@ from app.services.documents import (
     save_document,
 )
 from app.services.ingestion import ingest_document
+from app.services.document_lifecycle import (
+    DocumentBusy,
+    DocumentNotFound,
+    DocumentNotRetryable,
+    FileCleanupFailed,
+    VectorCleanupFailed,
+    delete_document,
+    retry_document,
+)
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -66,3 +75,44 @@ async def get_document_status(
     if document is None:
         raise HTTPException(status_code=404, detail="Document not found")
     return DocumentPublic.model_validate(document)
+
+
+@router.post("/{document_id}/retry", response_model=DocumentPublic, status_code=202)
+async def retry_failed_document(
+    document_id: UUID,
+    background_tasks: BackgroundTasks,
+    user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> DocumentPublic:
+    try:
+        document = await retry_document(
+            session, user_id=user.id, document_id=document_id, settings=settings
+        )
+    except DocumentNotFound as exc:
+        raise HTTPException(status_code=404, detail="Document not found") from exc
+    except DocumentNotRetryable as exc:
+        raise HTTPException(status_code=409, detail="Only failed documents can be retried") from exc
+    except (VectorCleanupFailed, FileCleanupFailed) as exc:
+        raise HTTPException(status_code=503, detail="Document retry is unavailable") from exc
+    background_tasks.add_task(ingest_document, document.id, user.id, settings)
+    return DocumentPublic.model_validate(document)
+
+
+@router.delete("/{document_id}", status_code=204)
+async def remove_document(
+    document_id: UUID,
+    user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> None:
+    try:
+        await delete_document(
+            session, user_id=user.id, document_id=document_id, settings=settings
+        )
+    except DocumentNotFound as exc:
+        raise HTTPException(status_code=404, detail="Document not found") from exc
+    except DocumentBusy as exc:
+        raise HTTPException(status_code=409, detail="Document is still processing") from exc
+    except (VectorCleanupFailed, FileCleanupFailed) as exc:
+        raise HTTPException(status_code=503, detail="Document cleanup is incomplete") from exc

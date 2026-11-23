@@ -1,10 +1,8 @@
 from uuid import UUID
 
 import structlog
-from pdfminer.pdfexceptions import PDFException
 from qdrant_client import AsyncQdrantClient
-from qdrant_client.http.exceptions import ResponseHandlingException, UnexpectedResponse
-from sqlalchemy import delete, update
+from sqlalchemy import delete, func, update
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from starlette.concurrency import run_in_threadpool
 
@@ -37,7 +35,7 @@ async def ingest_document(
                     Document.user_id == user_id,
                     Document.status == "queued",
                 )
-                .values(status="processing", failure_reason=None)
+                .values(status="processing", failure_reason=None, status_changed_at=func.now())
                 .returning(Document.storage_key)
             )
             await session.commit()
@@ -74,7 +72,7 @@ async def ingest_document(
                 await session.flush()
 
             embedder = embeddings or E5Embeddings()
-            vectors = await embedder.documents([c.normalized_text for c in chunks])
+            vectors = await embedder.documents([chunk.normalized_text for chunk in chunks])
             if index is None:
                 client = AsyncQdrantClient(url=settings.qdrant_url, timeout=30)
                 try:
@@ -91,14 +89,24 @@ async def ingest_document(
                 await index.upsert(
                     user_id=user_id, document_id=document_id, chunks=chunks, vectors=vectors
                 )
-        except (
-            ExtractionError, PDFException, OSError, ValueError,
-            RuntimeError, ResponseHandlingException, UnexpectedResponse,
-        ) as exc:
-            log.warning(
-                "pdf_ingestion_failed",
-                document_id=str(document_id),
-                error_type=type(exc).__name__,
+
+            async with sessions.begin() as session:
+                await session.execute(
+                    update(Document)
+                    .where(
+                        Document.id == document_id,
+                        Document.user_id == user_id,
+                        Document.status == "processing",
+                    )
+                    .values(status="ready", failure_reason=None, status_changed_at=func.now())
+                )
+            log.info("pdf_ingestion_ready", document_id=str(document_id), chunks=len(chunks))
+        except Exception as exc:
+            # The background task has no HTTP caller to report unexpected failures to.
+            log.exception("pdf_ingestion_failed", document_id=str(document_id))
+            detail = (
+                str(exc)[:300] if isinstance(exc, ExtractionError)
+                else "Document processing failed. Retry the upload."
             )
             async with sessions.begin() as session:
                 await session.execute(
@@ -108,20 +116,9 @@ async def ingest_document(
                         Document.user_id == user_id,
                         Document.status == "processing",
                     )
-                    .values(status="failed", failure_reason=str(exc)[:500])
+                    .values(
+                        status="failed", failure_reason=detail, status_changed_at=func.now()
+                    )
                 )
-            return
-
-        async with sessions.begin() as session:
-            await session.execute(
-                update(Document)
-                .where(
-                    Document.id == document_id,
-                    Document.user_id == user_id,
-                    Document.status == "processing",
-                )
-                .values(status="ready", failure_reason=None)
-            )
-        log.info("pdf_ingestion_ready", document_id=str(document_id), chunks=len(chunks))
     finally:
         await engine.dispose()

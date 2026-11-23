@@ -10,7 +10,7 @@ class Credentials(BaseModel):
     @field_validator("email")
     @classmethod
     def normalize_email(cls, email: str) -> str:
-        return email.casefold()
+        return email.strip().casefold()
 
 
 class LoginCredentials(BaseModel):
@@ -20,7 +20,7 @@ class LoginCredentials(BaseModel):
     @field_validator("email")
     @classmethod
     def normalize_email(cls, email: str) -> str:
-        return email.casefold()
+        return email.strip().casefold()
 
 
 class UserPublic(BaseModel):

@@ -31,6 +31,6 @@ async def test_e5_uses_query_and_passage_prefixes(monkeypatch) -> None:
     ]
     assert await encoder.query("إِلَى ٤") == [0.6, 0.8, 0.0]
     assert model.inputs == [
-        ["passage: اهلا 123", "passage: English"],
+        ["passage: أَهْلًا ١٢٣", "passage: English"],
         ["query: الي 4"],
     ]

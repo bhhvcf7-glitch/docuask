@@ -21,7 +21,7 @@ class E5Embeddings:
     async def documents(self, passages: list[str]) -> list[list[float]]:
         if not passages:
             return []
-        texts = [f"passage: {normalize_arabic(text)}" for text in passages]
+        texts = [f"passage: {text}" for text in passages]
         return await run_in_threadpool(self._encode, texts)
 
     async def query(self, question: str) -> list[float]:

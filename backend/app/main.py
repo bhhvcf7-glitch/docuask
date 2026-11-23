@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from uuid import uuid4
 
 import structlog
@@ -11,15 +12,24 @@ from app.api.routes.qa import router as qa_router
 from app.api.routes.search import router as search_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging
+from app.services.recovery import fail_stale_ingestions
 
 log = structlog.get_logger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    settings = get_settings()
+    if settings.postgres_password is not None:
+        await fail_stale_ingestions(settings)
+    yield
 
 
 def create_app() -> FastAPI:
     settings = get_settings()
     configure_logging(settings.log_level)
 
-    app = FastAPI(title="DocuAsk API", version="0.1.0")
+    app = FastAPI(title="DocuAsk API", version="0.1.0", lifespan=lifespan)
     app.include_router(health_router)
     app.include_router(auth_router)
     app.include_router(documents_router)

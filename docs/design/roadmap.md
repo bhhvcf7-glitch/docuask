@@ -1,3 +1,5 @@
+> Historical roadmap, not current implementation status. Phases 1–8 of the revised MVP and a minimal React UI are present. Evaluation, hybrid retrieval, reranking, OCR, refresh tokens, production deployment and the remaining items below are not implemented.
+
 # Delivery plan
 
 This is an ordered plan, not a record of completed work. Each implementation phase will have exact file paths, runnable commands, verification criteria, one conventional commit, and two or three design-review questions. Complexity bands indicate relative effort only; they are not delivery-time promises.

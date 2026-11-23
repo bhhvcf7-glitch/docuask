@@ -7,19 +7,19 @@ Bilingual PDF question answering with citations. **MVP phase 8 and a minimal Rea
 | Feature | Status |
 | --- | --- |
 | FastAPI, PostgreSQL, Qdrant, Docker Compose | Implemented; local full-stack smoke test still required |
-| Argon2 login and JWT access | Implemented |
-| Authenticated PDF upload, SHA-256 deduplication | Implemented |
+| Argon2 login and JWT access | Implemented; casefolded email uniqueness enforced by migration |
+| Authenticated PDF upload, SHA-256 deduplication | Implemented; failed documents can retry, owner can delete |
 | PDF text extraction, Arabic normalization, page-numbered chunks | Implemented |
 | Multilingual-e5-small dense indexing and owner-scoped retrieval | Implemented; semantic quality not yet benchmarked |
 | OpenAI-compatible / Ollama LLM providers | Implemented; external model inference not exercised in CI |
 | SSE grounded QA, validated chunk IDs, source page numbers | Implemented; provider and streaming behavior covered by mocks |
 | Refusal for no/low-score evidence and model missing citations | Implemented; threshold not calibrated |
 | Client cancellation | Implemented with request-disconnect polling and async stream cleanup |
-| Minimal React UI | Implemented (Arabic/English upload, chat, sources); CI build and tests pending verification |
+| Minimal React UI | Implemented; CI TypeScript build and SSE parser tests |
 | Deployment | Not implemented |
 | Hit@k / MRR and latency benchmarks | Not measured |
 
-[Architecture](docs/architecture.md) · [MVP plan](docs/mvp-plan.md) · [Original roadmap](docs/roadmap.md)
+[Architecture design](docs/design/architecture.md) · [MVP plan](docs/mvp-plan.md) · [Historical roadmap](docs/design/roadmap.md)
 
 ## Run on Windows
 
@@ -80,7 +80,11 @@ Integration tests need migrated PostgreSQL and `RUN_DB_TESTS=1`; Qdrant tests al
 
 ## Limitations
 
-This is a local-development MVP, not a public production service. There is no OCR, refresh token, rate limiting, durable queue, automatic ingestion recovery, cache, prompt-injection guarantee, PDF highlighting, or deployed frontend. Cosine similarity threshold `QA_MIN_SCORE=0.45` is an uncalibrated heuristic. On cancellation the server closes the provider stream when possible, but providers may still bill for already processed tokens. Incomplete ingestion may require manual intervention. Do not expose the API publicly without hardening.
+This is a local-development MVP, not a public production service. There is no OCR, refresh token, rate limiting, durable queue, automatic rescheduling after crashes, cache, prompt-injection guarantee, PDF highlighting, or deployed frontend. Cosine similarity threshold `QA_MIN_SCORE=0.45` is an uncalibrated heuristic. On cancellation the server closes the provider stream when possible, but providers may still bill for already processed tokens. Unexpected ingestion errors mark the document failed; a startup sweep marks processing documents older than STALE_PROCESSING_MINUTES as failed. Owners can retry failed documents using POST /documents/{id}/retry or delete queued/failed/ready documents using DELETE /documents/{id}. Delete removes Qdrant points, database state and local PDF when all services are available; these resources do not share a transaction, so a partial cleanup failure may need manual repair. Do not expose the API publicly without hardening.
+
+## Upgrade notes
+
+Run Alembic upgrade before starting the updated API. Migration 0002 normalizes existing email addresses and creates a unique index on lower(email). If multiple accounts collide under lower(trim(email)), the migration stops: resolve them manually before retrying; no user records are merged automatically. Documents now track status_changed_at for stale-job recovery. PDF ingestion normalizes saved chunk text once, while questions are normalized at embedding time. /health is liveness; /ready checks PostgreSQL and Qdrant and is used by the container healthcheck. Model-specific relevance thresholds remain uncalibrated pending evaluation.
 
 ## License
 

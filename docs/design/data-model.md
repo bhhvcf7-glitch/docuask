@@ -1,3 +1,5 @@
+> Original data-model proposal. Implemented tables: users, documents, chunks. Other entities in this document are not in the current database. Some proposed columns and constraints differ from the actual Alembic migrations.
+
 # Relational model (proposal)
 
 All IDs are UUIDs; timestamps are timezone-aware UTC. SQLAlchemy 2.0 async ORM and Alembic own schema changes. The diagram is logical, not a migration.

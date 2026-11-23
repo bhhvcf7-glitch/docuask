@@ -1,7 +1,8 @@
 """Normalize emails and track document processing age."""
 
-from alembic import op
 import sqlalchemy as sa
+
+from alembic import op
 
 revision = "0002_email_and_processing_age"
 down_revision = "0001_initial"

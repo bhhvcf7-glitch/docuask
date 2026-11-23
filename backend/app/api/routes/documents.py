@@ -9,13 +9,6 @@ from app.core.config import Settings, get_settings
 from app.db.models import User
 from app.db.repositories import get_document, list_documents
 from app.schemas.documents import DocumentPublic
-from app.services.documents import (
-    DuplicateDocument,
-    InvalidUpload,
-    UploadTooLarge,
-    save_document,
-)
-from app.services.ingestion import ingest_document
 from app.services.document_lifecycle import (
     DocumentBusy,
     DocumentNotFound,
@@ -25,6 +18,13 @@ from app.services.document_lifecycle import (
     delete_document,
     retry_document,
 )
+from app.services.documents import (
+    DuplicateDocument,
+    InvalidUpload,
+    UploadTooLarge,
+    save_document,
+)
+from app.services.ingestion import ingest_document
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 

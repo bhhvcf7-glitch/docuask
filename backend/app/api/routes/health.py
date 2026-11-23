@@ -1,5 +1,5 @@
 import asyncio
-from typing import Literal
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -37,7 +37,7 @@ async def check_dependencies(settings: Settings) -> None:
 
 
 @router.get("/ready", response_model=HealthStatus)
-async def ready(settings: Settings = Depends(get_settings)) -> HealthStatus:
+async def ready(settings: Annotated[Settings, Depends(get_settings)]) -> HealthStatus:
     try:
         await asyncio.wait_for(check_dependencies(settings), timeout=8)
     except (

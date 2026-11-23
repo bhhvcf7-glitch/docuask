@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     postgres_user: str = "docuask"
     postgres_password: SecretStr | None = None
     qdrant_url: str = "http://localhost:6333"
+    qdrant_collection: str = "docuask_e5_small_v1"
     jwt_secret: SecretStr | None = None
     access_token_minutes: int = Field(default=30, ge=1, le=1440)
     storage_dir: Path = Path("storage")

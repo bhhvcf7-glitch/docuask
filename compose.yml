@@ -12,6 +12,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-docuask}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Copy .env.example to .env and set POSTGRES_PASSWORD}
       QDRANT_URL: http://qdrant:6333
+      QDRANT_COLLECTION: ${QDRANT_COLLECTION:-docuask_e5_small_v1}
       JWT_SECRET: ${JWT_SECRET:?Set a random JWT_SECRET in .env}
       ACCESS_TOKEN_MINUTES: ${ACCESS_TOKEN_MINUTES:-30}
       STORAGE_DIR: /app/storage
@@ -20,6 +21,7 @@ services:
       - "127.0.0.1:8000:8000"
     volumes:
       - uploads_data:/app/storage
+      - model_cache:/app/model-cache
     depends_on:
       postgres:
         condition: service_healthy
@@ -52,3 +54,4 @@ volumes:
   postgres_data:
   qdrant_data:
   uploads_data:
+  model_cache:

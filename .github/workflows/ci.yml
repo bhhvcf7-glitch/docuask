@@ -21,6 +21,10 @@ jobs:
           --health-interval 5s
           --health-timeout 3s
           --health-retries 10
+      qdrant:
+        image: qdrant/qdrant:v1.12.6
+        ports:
+          - 6333:6333
     env:
       POSTGRES_HOST: localhost
       POSTGRES_PORT: 5432
@@ -28,6 +32,8 @@ jobs:
       POSTGRES_PASSWORD: ci-only-password
       POSTGRES_DB: docuask
       RUN_DB_TESTS: "1"
+      RUN_VECTOR_TESTS: "1"
+      QDRANT_URL: http://localhost:6333
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

@@ -1,6 +1,6 @@
 # DocuAsk
 
-Bilingual, citation-grounded document question answering. Project status: MVP phase 6 text-based PDF ingestion implemented. Vector indexing, retrieval, and QA are not yet implemented.
+Bilingual, citation-grounded document question answering. Project status: MVP phase 7 dense vector indexing and authenticated search implemented. LLM answer generation and SSE are not yet implemented.
 
 ## Problem
 
@@ -60,14 +60,16 @@ Python 3.11, FastAPI, Pydantic v2, SQLAlchemy 2 async, Alembic, PostgreSQL, Redi
 | Document listing / status | Implemented, authenticated and owner-scoped |
 | PDF ingestion background task | Implemented with queued -> processing -> ready/failed transitions |
 | Arabic normalization and page-aware chunks | Implemented with extraction and chunk tests |
-| Retrieval and answer generation | Not implemented |
+| CPU multilingual-e5 embeddings and Qdrant | Implemented; integration tests use deterministic fake vectors, not real model weights |
+| Authenticated dense search and tenant filtering | Implemented; PostgreSQL ownership rechecked when resolving hits |
+| LLM answer generation and SSE | Not implemented |
 | UI | Not implemented |
 | Evaluation results | Not measured |
 | Deployment | Not deployed |
 
 **This is an API and database skeleton, not yet a document Q&A application.** No evaluation metrics or live deployment URLs are claimed.
 
-## Local development (phase 6)
+## Local development (phase 7)
 
 Requires Python 3.11, Docker Engine with the Compose plugin, and Make (Git Bash or WSL on Windows). Create a local env file before starting the stack. Set both POSTGRES_PASSWORD and JWT_SECRET to independent random values (JWT_SECRET must be at least 32 characters). Uploads use the Docker volume `uploads_data`:
 
@@ -79,9 +81,9 @@ make migrate
 curl http://localhost:8000/health
 ```
 
-Expected health JSON: `{"status":"ok"}`. OpenAPI docs: `http://localhost:8000/docs`. PostgreSQL and Qdrant are internal Compose services at this stage; the API does not access them yet.
+Expected health JSON: `{"status":"ok"}`. OpenAPI docs: `http://localhost:8000/docs`. PostgreSQL and Qdrant and PostgreSQL are internal Compose services. The API uses both for indexing and retrieval.
 
-Document endpoints: `POST /documents` takes multipart `file` (PDF only), returns 201 and a `queued` record; `GET /documents` lists only your documents; `GET /documents/{document_id}` returns metadata or 404 when absent or not owned. The upload checks filename extension, declared MIME, `%PDF-` signature, parseability, encrypted status, page presence, and byte limit. It hashes the streamed file and rejects duplicate SHA-256 values per user with HTTP 409. Local files have opaque UUID-based paths; returned metadata never exposes storage paths. Storage is local, not cloud-backed. Max PDF size defaults to 10 MiB, configurable with `MAX_UPLOAD_BYTES`. `STORAGE_DIR` defaults to `storage` in local Python and `/app/storage` in Compose. Newly uploaded files start as `queued` and ingestion runs as an in-process FastAPI background task after the HTTP response. Text-based PDFs become `ready` with stored page-numbered chunks; scanned/image-only PDFs become `failed` because OCR is not implemented. Parser safeguards do not fully defend against every malicious PDF; do not expose the MVP publicly yet.\n\nThe authentication endpoints are `POST /auth/register` (201), `POST /auth/login` (JWT access token), and `GET /auth/me` (Bearer token required). Registration requires at least 12 password characters. Email addresses are case-folded at the API boundary; existing pre-normalization database records should be migrated before accepting public registrations. Token lifetime defaults to 30 minutes. There is no refresh-token or login rate-limiting support yet, and this MVP must not be exposed to the public internet without those controls.
+Document endpoints: `POST /documents` takes multipart `file` (PDF only), returns 201 and a `queued` record; `GET /documents` lists only your documents; `GET /documents/{document_id}` returns metadata or 404 when absent or not owned. The upload checks filename extension, declared MIME, `%PDF-` signature, parseability, encrypted status, page presence, and byte limit. It hashes the streamed file and rejects duplicate SHA-256 values per user with HTTP 409. Local files have opaque UUID-based paths; returned metadata never exposes storage paths. Storage is local, not cloud-backed. Max PDF size defaults to 10 MiB, configurable with `MAX_UPLOAD_BYTES`. `STORAGE_DIR` defaults to `storage` in local Python and `/app/storage` in Compose. Newly uploaded files start as `queued` and ingestion runs as an in-process FastAPI background task after the HTTP response. Text-based PDFs become `ready` after Qdrant indexing succeeds; scanned/image-only PDFs become `failed` because OCR is not implemented. Parser safeguards do not fully defend against every malicious PDF; do not expose the MVP publicly yet.\n\nThe authentication endpoints are `POST /auth/register` (201), `POST /auth/login` (JWT access token), and `GET /auth/me` (Bearer token required). Registration requires at least 12 password characters. Email addresses are case-folded at the API boundary; existing pre-normalization database records should be migrated before accepting public registrations. Token lifetime defaults to 30 minutes. There is no refresh-token or login rate-limiting support yet, and this MVP must not be exposed to the public internet without those controls.
 
 For local checks:
 
@@ -95,13 +97,23 @@ The database integration tests are skipped by default outside CI. To run them lo
 
 Stop containers with `make down`. Docker Compose startup was not executed in the authoring environment because Docker was unavailable; verify it locally. PostgreSQL credentials are read from the uncommitted .env file; the example value is for local setup only. Changing credentials after initializing a database volume does not update the existing PostgreSQL user password. Remove the volume only if you intend to destroy local data.
 
-\n## Upload verification\n\nIn PowerShell, use Swagger UI at `http://localhost:8000/docs` to register, log in and authorize with the access token. Then call `POST /documents` using a small text-based PDF and inspect `GET /documents`. The initial upload response may show `status: queued`. Poll `GET /documents/{document_id}` for `ready` or `failed`; this is an in-process background task, not a durable queue. The status may remain `processing` after an API process crash.\n\nFor real PostgreSQL-backed integration tests outside CI, set `RUN_DB_TESTS=1` with a migrated database and run `python -m pytest backend/tests -q`. CI runs these against PostgreSQL 16. Keep the `uploads_data` Docker volume if you want to preserve files across restarts. The application does not currently reconcile files left behind by a process crash or recover interrupted ingestion tasks.\n\n## Ingestion (phase 6)
+\n## Upload verification\n\nIn PowerShell, use Swagger UI at `http://localhost:8000/docs` to register, log in and authorize with the access token. Then call `POST /documents` using a small text-based PDF and inspect `GET /documents`. The initial upload response may show `status: queued`. Poll `GET /documents/{document_id}` for `ready` or `failed`; this is an in-process background task, not a durable queue. The status may remain `processing` after an API process crash.\n\nFor real PostgreSQL-backed integration tests outside CI, set `RUN_DB_TESTS=1` with a migrated database and run `python -m pytest backend/tests -q`. CI runs these against PostgreSQL 16. Keep the `uploads_data` Docker volume if you want to preserve files across restarts. The application does not currently reconcile files left behind by a process crash or recover interrupted ingestion tasks. Partially indexed Qdrant points are hidden from search by PostgreSQL's ready-status check.\n\n## Ingestion (phase 6)
 
 Uploaded PDF files are checked with pdfplumber (maximum 200 pages). Nonempty pages are extracted separately; blank pages are skipped while their page numbers remain stable. Arabic retrieval text removes tatweel and combining marks, folds alef and alif maqsura/yaa variants, and maps Arabic-Indic and Eastern Arabic digits to ASCII digits. The original extracted text is stored separately from normalized text.
 
-Chunks are paragraph-aware, target at most 900 characters, overlap up to about 120 characters, and never span multiple pages. Status transitions: queued -> processing -> ready, or processing -> failed for unreadable/empty PDFs. The ingestion task uses a fresh database session after the upload response is committed. It does not use a durable queue; there are no automatic retries, OCR, or vector embeddings yet.
+Chunks are paragraph-aware, target at most 900 characters, overlap up to about 120 characters, and never span multiple pages. Status transitions: queued -> processing -> ready, or processing -> failed for unreadable/empty PDFs. The ingestion task uses a fresh database session after the upload response is committed. It does not use a durable queue; there are no automatic retries or OCR. It now computes dense embeddings and indexes into Qdrant before marking a document ready.
 
 PDF extraction can produce reversed or disordered Arabic glyph sequences. The app does not reverse arbitrary RTL runs because that corrupts correctly extracted text. Better bidi handling and geometry-based citations require dedicated fixtures.
+
+## Dense retrieval (phase 7)
+
+The CPU embedder uses `intfloat/multilingual-e5-small` (384 dimensions), adding `passage:` and `query:` prefixes and L2-normalizing embeddings. The model is loaded lazily and cached once per API process; model weights download on first indexing/search and persist in the Compose `model_cache` volume. The Docker image includes the optional embeddings dependencies; direct Python development requires `pip install -e './backend[dev,embeddings]'`. Installing torch and downloading model weights can take significant disk space and time on a laptop. CI uses deterministic fake vectors with real Qdrant, so CI does not measure the actual model's semantic relevance or throughput.
+
+On ingestion, chunks are committed in PostgreSQL with `processing` status, embeddings are generated, and Qdrant points are upserted with stable IDs from document ID and chunk ordinal. After indexing finishes the document becomes `ready`. Repeated upserts of the same chunk do not duplicate points. The current pipeline does not automatically recover crashes or remove obsolete points after changed chunk counts; a later retry/reconciliation task is needed.
+
+`POST /search` requires a Bearer token and JSON body `{"question":"ما هو موضوع التقرير؟","limit":5}`. Results contain chunk ID, document ID, filename, page number, original passage and similarity score. Search always includes a Qdrant `user_id` filter; a second ownership and `ready` filter is applied in PostgreSQL. Users cannot pass a `user_id` in the request. Search has no LLM answer or citation synthesis yet.
+
+Real Qdrant tenant isolation and idempotence tests run in CI. Local tests requiring Qdrant additionally need `RUN_VECTOR_TESTS=1` and a reachable `QDRANT_URL`. Avoid exposing Qdrant publicly or sharing the same collection with a different embedding model.
 
 ## Evaluation table
 
@@ -116,7 +128,7 @@ The planned comparison will be populated only after local runs over a versioned 
 
 ## Known limitations
 
-Database schema now implemented; future architecture remains a design. Email normalization, JWT authentication and per-user upload deduplication are implemented; page-based extraction and chunking run in phase 6; vector indexing and citations are still pending. PDF text highlighting is not guaranteed by character offsets alone: precise text-layer spans or bounding-box mapping must be retained during extraction. OCR text alignment will need a separate mapping and confidence tracking. LLM citations require backend validation and cannot prove every individual claim without further evidence checks.
+Database schema now implemented; future architecture remains a design. Email normalization, JWT authentication and per-user upload deduplication are implemented; page-based extraction and chunking run in phase 6; dense vector indexing and page-scoped retrieval run in phase 7. LLM citations and answers remain pending. PDF text highlighting is not guaranteed by character offsets alone: precise text-layer spans or bounding-box mapping must be retained during extraction. OCR text alignment will need a separate mapping and confidence tracking. LLM citations require backend validation and cannot prove every individual claim without further evidence checks.
 
 ## Demo
 

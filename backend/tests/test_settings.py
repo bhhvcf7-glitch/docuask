@@ -7,6 +7,7 @@ from app.core.config import Settings
 def test_defaults_are_safe_for_local_development(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("APP_ENV", raising=False)
     monkeypatch.delenv("LOG_LEVEL", raising=False)
+    monkeypatch.delenv("POSTGRES_PASSWORD", raising=False)
     settings = Settings(_env_file=None)
 
     assert settings.app_env == "development"

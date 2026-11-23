@@ -15,6 +15,15 @@ async def get_document(
     return await session.scalar(statement)
 
 
+async def list_documents(session: AsyncSession, *, user_id: UUID) -> list[Document]:
+    statement = (
+        select(Document)
+        .where(Document.user_id == user_id)
+        .order_by(Document.created_at.desc(), Document.id)
+    )
+    return list((await session.scalars(statement)).all())
+
+
 async def list_document_chunks(
     session: AsyncSession, *, user_id: UUID, document_id: UUID
 ) -> list[Chunk]:

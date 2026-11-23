@@ -1,4 +1,5 @@
 from functools import lru_cache
+from pathlib import Path
 from typing import Literal
 
 from pydantic import Field, SecretStr, model_validator
@@ -18,6 +19,8 @@ class Settings(BaseSettings):
     qdrant_url: str = "http://localhost:6333"
     jwt_secret: SecretStr | None = None
     access_token_minutes: int = Field(default=30, ge=1, le=1440)
+    storage_dir: Path = Path("storage")
+    max_upload_bytes: int = Field(default=10 * 1024 * 1024, gt=0, le=100 * 1024 * 1024)
 
     @model_validator(mode="after")
     def validate_jwt_secret(self) -> "Settings":

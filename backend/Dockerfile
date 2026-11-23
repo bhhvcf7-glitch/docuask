@@ -10,7 +10,9 @@ COPY backend/app /app/app
 COPY backend/alembic.ini /app/alembic.ini
 COPY backend/alembic /app/alembic
 RUN pip install --no-cache-dir . \
-    && useradd --create-home --uid 10001 appuser
+    && useradd --create-home --uid 10001 appuser \
+    && mkdir -p /app/storage \
+    && chown appuser:appuser /app/storage
 
 USER appuser
 EXPOSE 8000

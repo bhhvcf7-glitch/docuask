@@ -1,6 +1,6 @@
 # DocuAsk
 
-Bilingual, citation-grounded document question answering. Project status: MVP phase 4 authentication implemented. PDF upload, ingestion, retrieval and QA are not yet implemented.
+Bilingual, citation-grounded document question answering. Project status: MVP phase 5 authenticated PDF upload implemented. PDF text extraction, vector retrieval and QA are not yet implemented.
 
 ## Problem
 
@@ -56,7 +56,9 @@ Python 3.11, FastAPI, Pydantic v2, SQLAlchemy 2 async, Alembic, PostgreSQL, Redi
 | Alembic upgrade/downgrade | Migration supplied; CI checks both directions |
 | Auth registration, login, /auth/me | Implemented; see GitHub Actions for test status |
 | Argon2id passwords and JWT | Implemented; no refresh tokens yet |
-| Upload and worker | Not implemented |
+| PDF upload and local storage | Implemented; SHA-256 dedup and validation tests in CI |
+| Document listing / status | Implemented, authenticated and owner-scoped |
+| Ingestion worker | Not implemented; uploads remain queued |
 | Retrieval and answer generation | Not implemented |
 | UI | Not implemented |
 | Evaluation results | Not measured |
@@ -64,9 +66,9 @@ Python 3.11, FastAPI, Pydantic v2, SQLAlchemy 2 async, Alembic, PostgreSQL, Redi
 
 **This is an API and database skeleton, not yet a document Q&A application.** No evaluation metrics or live deployment URLs are claimed.
 
-## Local development (phase 4)
+## Local development (phase 5)
 
-Requires Python 3.11, Docker Engine with the Compose plugin, and Make (Git Bash or WSL on Windows). Create a local env file before starting the stack. Set both POSTGRES_PASSWORD and JWT_SECRET to independent random values (JWT_SECRET must be at least 32 characters):
+Requires Python 3.11, Docker Engine with the Compose plugin, and Make (Git Bash or WSL on Windows). Create a local env file before starting the stack. Set both POSTGRES_PASSWORD and JWT_SECRET to independent random values (JWT_SECRET must be at least 32 characters). Uploads use the Docker volume `uploads_data`:
 
 ```bash
 cp .env.example .env
@@ -78,7 +80,7 @@ curl http://localhost:8000/health
 
 Expected health JSON: `{"status":"ok"}`. OpenAPI docs: `http://localhost:8000/docs`. PostgreSQL and Qdrant are internal Compose services at this stage; the API does not access them yet.
 
-The new endpoints are `POST /auth/register` (201), `POST /auth/login` (JWT access token), and `GET /auth/me` (Bearer token required). Registration requires at least 12 password characters. Email addresses are case-folded at the API boundary; existing pre-normalization database records should be migrated before accepting public registrations. Token lifetime defaults to 30 minutes. There is no refresh-token or login rate-limiting support yet, and this MVP must not be exposed to the public internet without those controls.
+Document endpoints: `POST /documents` takes multipart `file` (PDF only), returns 201 and a `queued` record; `GET /documents` lists only your documents; `GET /documents/{document_id}` returns metadata or 404 when absent or not owned. The upload checks filename extension, declared MIME, `%PDF-` signature, parseability, encrypted status, page presence, and byte limit. It hashes the streamed file and rejects duplicate SHA-256 values per user with HTTP 409. Local files have opaque UUID-based paths; returned metadata never exposes storage paths. Storage is local, not cloud-backed. Max PDF size defaults to 10 MiB, configurable with `MAX_UPLOAD_BYTES`. `STORAGE_DIR` defaults to `storage` in local Python and `/app/storage` in Compose. Files remain `queued` until phase 6. PDF extraction/OCR are not implemented. Parser safeguards do not fully defend against every malicious PDF; do not expose the MVP publicly yet.\n\nThe authentication endpoints are `POST /auth/register` (201), `POST /auth/login` (JWT access token), and `GET /auth/me` (Bearer token required). Registration requires at least 12 password characters. Email addresses are case-folded at the API boundary; existing pre-normalization database records should be migrated before accepting public registrations. Token lifetime defaults to 30 minutes. There is no refresh-token or login rate-limiting support yet, and this MVP must not be exposed to the public internet without those controls.
 
 For local checks:
 
@@ -92,7 +94,7 @@ The database integration tests are skipped by default outside CI. To run them lo
 
 Stop containers with `make down`. Docker Compose startup was not executed in the authoring environment because Docker was unavailable; verify it locally. PostgreSQL credentials are read from the uncommitted .env file; the example value is for local setup only. Changing credentials after initializing a database volume does not update the existing PostgreSQL user password. Remove the volume only if you intend to destroy local data.
 
-## Evaluation table
+\n## Upload verification\n\nIn PowerShell, use Swagger UI at `http://localhost:8000/docs` to register, log in and authorize with the access token. Then call `POST /documents` using a small text-based PDF and inspect `GET /documents`. The uploaded document initially has `status: queued`; that is expected until phase 6.\n\nFor real PostgreSQL-backed integration tests outside CI, set `RUN_DB_TESTS=1` with a migrated database and run `python -m pytest backend/tests -q`. CI runs these against PostgreSQL 16. Keep the `uploads_data` Docker volume if you want to preserve files across restarts. The application does not currently reconcile files left behind by a process crash between disk write and database commit.\n\n## Evaluation table
 
 The planned comparison will be populated only after local runs over a versioned bilingual dataset.
 
@@ -105,7 +107,7 @@ The planned comparison will be populated only after local runs over a versioned 
 
 ## Known limitations
 
-Database schema now implemented; future architecture remains a design. Email normalization and JWT access authentication are implemented; per-user upload deduplication arrives in phase 5. PDF text highlighting is not guaranteed by character offsets alone: precise text-layer spans or bounding-box mapping must be retained during extraction. OCR text alignment will need a separate mapping and confidence tracking. LLM citations require backend validation and cannot prove every individual claim without further evidence checks.
+Database schema now implemented; future architecture remains a design. Email normalization, JWT authentication and per-user upload deduplication are implemented; ingestion starts in phase 6. PDF text highlighting is not guaranteed by character offsets alone: precise text-layer spans or bounding-box mapping must be retained during extraction. OCR text alignment will need a separate mapping and confidence tracking. LLM citations require backend validation and cannot prove every individual claim without further evidence checks.
 
 ## Demo
 

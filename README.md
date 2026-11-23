@@ -1,6 +1,6 @@
 # DocuAsk
 
-Bilingual, citation-grounded document question answering. Project status: MVP phase 1 repository skeleton implemented; document processing, authentication, retrieval, and question answering are not yet implemented.
+Bilingual, citation-grounded document question answering. Project status: MVP phase 2 configuration and logging implemented. Database models, authentication, ingestion, retrieval, and QA are not yet implemented.
 
 ## Problem
 
@@ -47,9 +47,11 @@ Python 3.11, FastAPI, Pydantic v2, SQLAlchemy 2 async, Alembic, PostgreSQL, Redi
 | Item | State |
 | --- | --- |
 | Architecture and data design | Drafted; MVP plan supersedes original delivery order |
-| FastAPI /health and OpenAPI schema | Implemented, 2 local pytest tests passed |
-| Docker Compose API, PostgreSQL, Qdrant | Defined; runtime startup not verified in this environment |
-| GitHub Actions Ruff/pytest | Workflow added; remote run not yet verified |
+| FastAPI /health and OpenAPI schema | Implemented; tested in GitHub CI |
+| Docker Compose API, PostgreSQL, Qdrant | Defined with env-based configuration; container startup not verified here |
+| GitHub Actions Ruff/pytest | CI workflow enabled; see Actions for current run results |
+| Pydantic Settings and structlog | Implemented with configuration and request-log tests |
+| MIT LICENSE | Added |
 | API and authentication | Not implemented |
 | Upload and worker | Not implemented |
 | Retrieval and answer generation | Not implemented |
@@ -59,11 +61,13 @@ Python 3.11, FastAPI, Pydantic v2, SQLAlchemy 2 async, Alembic, PostgreSQL, Redi
 
 **This is a working API skeleton, not yet a document Q&A application.** No evaluation metrics or live deployment URLs are claimed.
 
-## Local development (phase 1)
+## Local development (phase 2)
 
-Requires Python 3.11, Docker Engine with the Compose plugin, and Make (Git Bash or WSL on Windows).
+Requires Python 3.11, Docker Engine with the Compose plugin, and Make (Git Bash or WSL on Windows). Create a local env file before starting the stack:
 
 ```bash
+cp .env.example .env
+# Change POSTGRES_PASSWORD in .env to a unique local password.
 make dev
 curl http://localhost:8000/health
 ```
@@ -78,7 +82,7 @@ make lint
 make test
 ```
 
-Stop containers with `make down`. Docker Compose startup was not executed in the authoring environment because Docker was unavailable; verify it locally. Phase 2 will replace the current local-only PostgreSQL credentials with a settings-driven configuration.
+Stop containers with `make down`. Docker Compose startup was not executed in the authoring environment because Docker was unavailable; verify it locally. PostgreSQL credentials are read from the uncommitted .env file; the example value is for local setup only. Changing credentials after initializing a database volume does not update the existing PostgreSQL user password. Remove the volume only if you intend to destroy local data.
 
 ## Evaluation table
 
@@ -101,4 +105,4 @@ Demo GIF: pending first usable release.
 
 ## License
 
-MIT license is planned for MVP phase 2; no license grant is implied yet.
+Licensed under the [MIT License](LICENSE).

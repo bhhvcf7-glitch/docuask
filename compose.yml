@@ -3,6 +3,15 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-docuask}
+      POSTGRES_USER: ${POSTGRES_USER:-docuask}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Copy .env.example to .env and set POSTGRES_PASSWORD}
+      QDRANT_URL: http://qdrant:6333
     ports:
       - "127.0.0.1:8000:8000"
     depends_on:
@@ -15,13 +24,13 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: docuask
-      POSTGRES_PASSWORD: local_dev_only
-      POSTGRES_DB: docuask
+      POSTGRES_USER: ${POSTGRES_USER:-docuask}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Copy .env.example to .env and set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-docuask}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U docuask -d docuask"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-docuask} -d ${POSTGRES_DB:-docuask}"]
       interval: 5s
       timeout: 3s
       retries: 10

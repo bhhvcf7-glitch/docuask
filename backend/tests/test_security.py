@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import jwt
@@ -35,8 +35,8 @@ def test_access_token_rejects_tampering_expiry_and_wrong_type() -> None:
     expired = jwt.encode(
         {
             "sub": str(owner), "type": "access",
-            "iat": datetime.now(timezone.utc) - timedelta(hours=2),
-            "exp": datetime.now(timezone.utc) - timedelta(hours=1),
+            "iat": datetime.now(UTC) - timedelta(hours=2),
+            "exp": datetime.now(UTC) - timedelta(hours=1),
         },
         SECRET.get_secret_value(), algorithm="HS256",
     )
@@ -44,8 +44,8 @@ def test_access_token_rejects_tampering_expiry_and_wrong_type() -> None:
     refresh = jwt.encode(
         {
             "sub": str(owner), "type": "refresh",
-            "iat": datetime.now(timezone.utc),
-            "exp": datetime.now(timezone.utc) + timedelta(minutes=30),
+            "iat": datetime.now(UTC),
+            "exp": datetime.now(UTC) + timedelta(minutes=30),
         },
         SECRET.get_secret_value(), algorithm="HS256",
     )

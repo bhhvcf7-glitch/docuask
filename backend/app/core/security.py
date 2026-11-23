@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 import jwt
@@ -22,7 +22,7 @@ async def password_matches(encoded: str, password: str) -> bool:
 
 
 def issue_access_token(user_id: UUID, secret: SecretStr, lifetime_minutes: int) -> str:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     return jwt.encode(
         {"sub": str(user_id), "type": "access", "iat": now,
          "exp": now + timedelta(minutes=lifetime_minutes)},

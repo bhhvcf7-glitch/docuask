@@ -2,7 +2,7 @@ from datetime import UTC, datetime, timedelta
 
 import structlog
 from sqlalchemy import func, update
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 from app.core.config import Settings
 from app.db.models import Document
@@ -11,9 +11,13 @@ from app.db.session import database_url
 log = structlog.get_logger(__name__)
 
 
-async def fail_stale_ingestions(settings: Settings) -> int:
+async def fail_stale_ingestions(
+    settings: Settings, engine: AsyncEngine | None = None
+) -> int:
     cutoff = datetime.now(UTC) - timedelta(minutes=settings.stale_processing_minutes)
-    engine = create_async_engine(database_url(settings), pool_pre_ping=True)
+    owned_engine = engine is None
+    if engine is None:
+        engine = create_async_engine(database_url(settings), pool_pre_ping=True)
     try:
         async with engine.begin() as connection:
             changed = await connection.execute(
@@ -34,4 +38,5 @@ async def fail_stale_ingestions(settings: Settings) -> int:
             log.warning("stale_ingestions_failed", count=count)
         return count
     finally:
-        await engine.dispose()
+        if owned_engine:
+            await engine.dispose()

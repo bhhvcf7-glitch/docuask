@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     access_token_minutes: int = Field(default=30, ge=1, le=1440)
     storage_dir: Path = Path("storage")
     stale_processing_minutes: int = Field(default=30, ge=1, le=1440)
+    preload_embeddings: bool = True
     max_upload_bytes: int = Field(default=10 * 1024 * 1024, gt=0, le=100 * 1024 * 1024)
 
     llm_provider: Literal["ollama", "openai"] = "ollama"

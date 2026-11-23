@@ -1,12 +1,12 @@
 from typing import Annotated
 from uuid import UUID
 
-from app.core.resources import AppResources
 from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_user, get_resources, get_session
 from app.core.config import Settings, get_settings
+from app.core.resources import AppResources
 from app.db.models import User
 from app.db.repositories import get_document, list_documents
 from app.schemas.documents import DocumentPublic

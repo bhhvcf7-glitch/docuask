@@ -2,12 +2,12 @@ from collections.abc import AsyncIterator
 from typing import Annotated
 from uuid import UUID
 
-from app.core.resources import AppResources
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
+from app.core.resources import AppResources
 from app.core.security import verify_access_token
 from app.db.models import User
 from app.services.auth import find_user

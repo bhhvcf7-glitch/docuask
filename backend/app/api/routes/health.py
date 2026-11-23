@@ -1,7 +1,6 @@
 import asyncio
 from typing import Annotated, Literal
 
-from app.core.resources import AppResources
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from qdrant_client.http.exceptions import ResponseHandlingException, UnexpectedResponse
@@ -9,6 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.api.dependencies import get_resources
+from app.core.resources import AppResources
 
 router = APIRouter(tags=["health"])
 

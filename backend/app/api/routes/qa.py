@@ -1,6 +1,5 @@
 from typing import Annotated
 
-from app.core.resources import AppResources
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies import get_current_user, get_resources, get_session
 from app.clients.llm import ProviderNotConfigured, make_provider
 from app.core.config import Settings, get_settings
+from app.core.resources import AppResources
 from app.db.models import User
 from app.schemas.qa import QuestionRequest
 from app.services.qa import answer_events

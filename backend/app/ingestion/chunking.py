@@ -44,14 +44,14 @@ def chunk_pages(
             raise ValueError("Page numbers are one-based")
         current: list[str] = []
 
-        def flush() -> None:
-            if not current:
+        def flush(words_to_flush: list[str], number: int) -> None:
+            if not words_to_flush:
                 return
-            original = " ".join(current)
+            original = " ".join(words_to_flush)
             chunks.append(
                 TextChunk(
                     ordinal=len(chunks),
-                    page_number=page_number,
+                    page_number=number,
                     original_text=original,
                     normalized_text=normalize_arabic(original),
                 )
@@ -62,13 +62,13 @@ def chunk_pages(
             for word in words:
                 candidate = len(" ".join([*current, word]))
                 if candidate > max_chars and current:
-                    flush()
+                    flush(current, page_number)
                     current = _overlap(current, overlap_chars)
                     while current and len(" ".join([*current, word])) > max_chars:
                         current.pop(0)
                 current.append(word)
             # Preserve paragraph boundaries as chunk boundaries when the next paragraph
             # would exceed the limit; the blank line is not part of searchable text.
-        flush()
+        flush(current, page_number)
 
     return chunks

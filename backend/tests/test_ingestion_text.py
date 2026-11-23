@@ -28,7 +28,7 @@ def test_long_page_has_bounded_overlapping_chunks() -> None:
     assert len(chunks) > 3
     assert all(len(chunk.original_text) <= 80 for chunk in chunks)
     assert all(chunk.page_number == 1 for chunk in chunks)
-    for before, after in zip(chunks, chunks[1:]):
+    for before, after in zip(chunks, chunks[1:], strict=False):
         assert set(before.original_text.split()) & set(after.original_text.split())
 
 

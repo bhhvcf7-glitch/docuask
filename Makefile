@@ -1,7 +1,10 @@
-.PHONY: dev down logs test lint
+.PHONY: dev down logs test lint migrate
 
 dev:
 	docker compose up --build -d
+
+migrate:
+	docker compose exec -T api python -m alembic -c alembic.ini upgrade head
 
 down:
 	docker compose down

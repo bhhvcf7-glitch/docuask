@@ -39,6 +39,7 @@ async def test_background_ingestion_writes_page_numbered_chunks(tmp_path: Path) 
     try:
         async with sessions.begin() as session:
             session.add(User(id=owner, email=f"{owner}@example.com", password_hash="hash"))
+            await session.flush()
             session.add(Document(
                 id=document_id, user_id=owner,
                 original_name="report.pdf", storage_key=f"{owner}/{document_id}.pdf",

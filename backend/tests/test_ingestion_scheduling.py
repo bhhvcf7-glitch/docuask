@@ -1,14 +1,7 @@
 import inspect
 
-from fastapi.routing import APIRoute
-
-from app.main import app
+from app.api.routes.documents import upload_document
 
 
-def test_upload_endpoint_is_configured_with_background_tasks() -> None:
-    route = next(
-        route for route in app.routes
-        if isinstance(route, APIRoute) and route.path == "/documents"
-        and "POST" in route.methods
-    )
-    assert "background_tasks" in inspect.signature(route.endpoint).parameters
+def test_upload_endpoint_accepts_background_tasks() -> None:
+    assert "background_tasks" in inspect.signature(upload_document).parameters

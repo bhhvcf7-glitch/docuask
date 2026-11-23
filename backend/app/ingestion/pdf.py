@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pdfplumber
 from pdfminer.pdfexceptions import PDFException
+from pdfplumber.utils.exceptions import PdfminerException
 
 
 class ExtractionError(ValueError):
@@ -18,7 +19,7 @@ def extract_pages(path: Path, *, max_pages: int = 200) -> list[tuple[int, str]]:
                 text = (page.extract_text(layout=False) or "").strip()
                 if text:
                     pages.append((page_number, text))
-    except (PDFException, OSError) as exc:
+    except (PDFException, PdfminerException, OSError) as exc:
         raise ExtractionError("Could not extract text from PDF") from exc
 
     if not pages:

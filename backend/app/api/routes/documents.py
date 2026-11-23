@@ -28,10 +28,11 @@ async def upload_document(
     session: Annotated[AsyncSession, Depends(get_session)],
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> DocumentPublic:
+    owner_id = user.id
     try:
         document = await save_document(
             session,
-            user_id=user.id,
+            user_id=owner_id,
             upload=file,
             storage_dir=settings.storage_dir,
             max_bytes=settings.max_upload_bytes,
@@ -42,7 +43,7 @@ async def upload_document(
         raise HTTPException(status_code=413, detail="PDF exceeds upload limit") from exc
     except DuplicateDocument as exc:
         raise HTTPException(status_code=409, detail="Document already uploaded") from exc
-    background_tasks.add_task(ingest_document, document.id, user.id, settings)
+    background_tasks.add_task(ingest_document, document.id, owner_id, settings)
     return DocumentPublic.model_validate(document)
 
 

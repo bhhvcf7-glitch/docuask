@@ -100,7 +100,7 @@ async def test_disconnect_closes_provider() -> None:
 
 @pytest.mark.asyncio
 async def test_closing_sse_generator_closes_llm_stream() -> None:
-    provider = FakeProvider(["first", "second"])
+    provider = FakeProvider([f"first [source:{HIT['chunk_id']}]", "second"])
     stream = answer_events(
         None, user_id=uuid4(), question="What?", limit=5,
         settings=Settings(_env_file=None), provider=provider, search=search,
@@ -124,3 +124,13 @@ def test_invalid_question_is_rejected() -> None:
         QuestionRequest(question="")
     with pytest.raises(ValidationError):
         QuestionRequest(question="valid", limit=11)
+
+@pytest.mark.asyncio
+async def test_uncited_model_answer_is_refused() -> None:
+    records = unpack([p async for p in answer_events(
+        None, user_id=uuid4(), question="What?", limit=5,
+        settings=Settings(_env_file=None),
+        provider=FakeProvider(["unverified statement"]), search=search,
+    )])
+    assert records[0][0] == "refusal"
+    assert all(kind != "token" for kind, _ in records)

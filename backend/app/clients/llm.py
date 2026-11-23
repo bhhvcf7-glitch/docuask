@@ -71,7 +71,7 @@ class Ollama:
 def make_provider(settings: Settings) -> OpenAICompatible | Ollama:
     if settings.llm_provider == "ollama":
         return Ollama(settings.ollama_url, settings.llm_model)
-    if settings.openai_api_key is None:
+    if settings.openai_api_key is None or not settings.openai_api_key.get_secret_value():
         raise ProviderNotConfigured
     return OpenAICompatible(
         settings.openai_base_url,

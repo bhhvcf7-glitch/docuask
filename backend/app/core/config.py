@@ -23,6 +23,14 @@ class Settings(BaseSettings):
     storage_dir: Path = Path("storage")
     max_upload_bytes: int = Field(default=10 * 1024 * 1024, gt=0, le=100 * 1024 * 1024)
 
+    llm_provider: Literal["ollama", "openai"] = "ollama"
+    llm_model: str = "llama3.2:3b"
+    ollama_url: str = "http://localhost:11434"
+    openai_base_url: str = "https://api.openai.com/v1"
+    openai_api_key: SecretStr | None = None
+    qa_min_score: float = Field(default=0.45, ge=-1, le=1)
+    qa_max_answer_chars: int = Field(default=10000, ge=100, le=100000)
+
     @model_validator(mode="after")
     def validate_jwt_secret(self) -> "Settings":
         if self.jwt_secret is not None and len(self.jwt_secret.get_secret_value()) < 32:

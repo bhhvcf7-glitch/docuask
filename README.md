@@ -1,139 +1,85 @@
 # DocuAsk
 
-Bilingual, citation-grounded document question answering. Project status: MVP phase 7 dense vector indexing and authenticated search implemented. LLM answer generation and SSE are not yet implemented.
+Bilingual PDF question answering with citations. **MVP phase 8 is implemented in code.** Authentication, upload, Arabic text extraction, CPU embeddings, Qdrant search, and streaming QA are present. No deployment or end-to-end evaluation metrics are claimed.
 
-## Problem
+## Current capabilities
 
-Users need answers from PDF, DOCX, TXT, and Markdown documents in Arabic, English, or both. A credible answer must identify the source document and passage rather than merely sound plausible. Arabic PDFs introduce extraction errors, mixed directionality, and orthographic variants that change retrieval quality.
+| Feature | Status |
+| --- | --- |
+| FastAPI, PostgreSQL, Qdrant, Docker Compose | Implemented; local full-stack smoke test still required |
+| Argon2 login and JWT access | Implemented |
+| Authenticated PDF upload, SHA-256 deduplication | Implemented |
+| PDF text extraction, Arabic normalization, page-numbered chunks | Implemented |
+| Multilingual-e5-small dense indexing and owner-scoped retrieval | Implemented; semantic quality not yet benchmarked |
+| OpenAI-compatible / Ollama LLM providers | Implemented; external model inference not exercised in CI |
+| SSE grounded QA, validated chunk IDs, source page numbers | Implemented; provider and streaming behavior covered by mocks |
+| Refusal for no/low-score evidence and model missing citations | Implemented; threshold not calibrated |
+| Client cancellation | Implemented with request-disconnect polling and async stream cleanup |
+| Full deployed app and React UI | Not implemented |
+| Hit@k / MRR and latency benchmarks | Not measured |
 
-## Intended capabilities
+[Architecture](docs/architecture.md) · [MVP plan](docs/mvp-plan.md) · [Original roadmap](docs/roadmap.md)
 
-- Account-based document and chat isolation.
-- Validated uploads with asynchronous, retryable ingestion.
-- Arabic-aware parsing, preservation of original source text, and normalized retrieval text.
-- Dense/sparse hybrid retrieval using reciprocal rank fusion and optional cross-encoder reranking.
-- Answers constrained to retrieved evidence, validated source references, and explicit refusal for insufficient evidence.
-- Streaming UI and PDF citation navigation with passage highlights when reliable offsets/bounding boxes are available.
-- Reproducible retrieval evaluation rather than synthetic benchmark claims.
+## Run on Windows
 
-## Architecture
+Requirements: Python 3.11, Docker Desktop with Compose and enough disk space for PyTorch, sentence-transformers and e5 model weights.
 
-```mermaid
-flowchart LR
-    UI["React / Vite UI"] --> API["FastAPI API"]
-    API --> DB[(PostgreSQL)]
-    API --> REDIS[(Redis)]
-    REDIS --> WORKER["ARQ worker"]
-    WORKER --> PARSE["Parse + OCR + normalize + chunk"]
-    PARSE --> EMB["Embedding worker"]
-    EMB --> QDRANT[(Qdrant)]
-    API --> SEARCH["Dense + sparse retrieval / RRF"]
-    QDRANT --> SEARCH
-    SEARCH --> RERANK["Optional reranker"]
-    RERANK --> GEN["Grounded LLM provider"]
-    GEN --> VERIFY["Validate cited chunk IDs"]
-    VERIFY --> API
-    API --> UI
+```powershell
+Copy-Item .env.example .env
+notepad .env
+docker compose up --build -d
+docker compose exec -T api python -m alembic -c alembic.ini upgrade head
 ```
 
-See [architecture](docs/architecture.md), [data model](docs/data-model.md), [MVP phase plan](docs/mvp-plan.md), and the [original design roadmap](docs/roadmap.md). The original architecture describes the eventual system, not the current implementation.
+Set unique `POSTGRES_PASSWORD` and `JWT_SECRET` in `.env` before starting. `JWT_SECRET` must contain at least 32 characters. No secrets should be committed.
 
-## Technology decisions
+For **Ollama** (default), install and run Ollama on your computer and pull the configured model:
 
-Python 3.11, FastAPI, Pydantic v2, SQLAlchemy 2 async, Alembic, PostgreSQL, Redis/ARQ, Qdrant, multilingual-e5 with a benchmarked bge-m3 alternative, optional multilingual cross-encoder, configurable OpenAI-compatible/Ollama providers, React/TypeScript/Vite/Tailwind, TanStack Query, React Router, react-pdf, SSE, Prometheus, structlog, pytest and Vitest.
+```powershell
+ollama pull llama3.2:3b
+```
 
-## Status and verification
+Compose uses `http://host.docker.internal:11434` for the host Ollama service. Verify the container can reach that service; Ollama may need to bind beyond loopback depending on your Docker setup. Never expose Ollama publicly.
 
-| Item | State |
-| --- | --- |
-| Architecture and data design | Drafted; MVP plan supersedes original delivery order |
-| FastAPI /health and OpenAPI schema | Implemented; tested in GitHub CI |
-| Docker Compose API, PostgreSQL, Qdrant | Defined with env-based configuration; container startup not verified here |
-| GitHub Actions Ruff/pytest/PostgreSQL migrations | Workflow configured; see Actions for actual run status |
-| Pydantic Settings and structlog | Implemented with configuration and request-log tests |
-| MIT LICENSE | Added |
-| SQLAlchemy users/documents/chunks | Implemented; database constraints and tenant-scoped reads tested in CI |
-| Alembic upgrade/downgrade | Migration supplied; CI checks both directions |
-| Auth registration, login, /auth/me | Implemented; see GitHub Actions for test status |
-| Argon2id passwords and JWT | Implemented; no refresh tokens yet |
-| PDF upload and local storage | Implemented; SHA-256 dedup and validation tests in CI |
-| Document listing / status | Implemented, authenticated and owner-scoped |
-| PDF ingestion background task | Implemented with queued -> processing -> ready/failed transitions |
-| Arabic normalization and page-aware chunks | Implemented with extraction and chunk tests |
-| CPU multilingual-e5 embeddings and Qdrant | Implemented; integration tests use deterministic fake vectors, not real model weights |
-| Authenticated dense search and tenant filtering | Implemented; PostgreSQL ownership rechecked when resolving hits |
-| LLM answer generation and SSE | Not implemented |
-| UI | Not implemented |
-| Evaluation results | Not measured |
-| Deployment | Not deployed |
+Alternatively, set in `.env`:
 
-**This is an API and database skeleton, not yet a document Q&A application.** No evaluation metrics or live deployment URLs are claimed.
+```dotenv
+LLM_PROVIDER=openai
+LLM_MODEL=gpt-4o-mini
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_API_KEY=your-own-api-key
+```
 
-## Local development (phase 7)
+Restart the API after changing the environment. An OpenAI-compatible provider must implement `/chat/completions` streaming.
 
-Requires Python 3.11, Docker Engine with the Compose plugin, and Make (Git Bash or WSL on Windows). Create a local env file before starting the stack. Set both POSTGRES_PASSWORD and JWT_SECRET to independent random values (JWT_SECRET must be at least 32 characters). Uploads use the Docker volume `uploads_data`:
+### API workflow
+
+Open `http://localhost:8000/docs`. Register with `POST /auth/register`, log in with `POST /auth/login`, authorize with your Bearer token, upload a text-based PDF via `POST /documents`, and poll `GET /documents/{document_id}` until `ready`. Processing runs in an in-process FastAPI background task. Scanned PDFs have no OCR support and fail ingestion.
+
+`POST /search` accepts `{"question":"ما موضوع المستند؟","limit":5}` and returns ranked passages with source pages.
+
+`POST /qa/ask` accepts the same JSON and responds as `text/event-stream`. Use a streaming HTTP client to observe chunks:
 
 ```bash
-cp .env.example .env
-# Change POSTGRES_PASSWORD in .env to a unique local password.
-make dev
-make migrate
-curl http://localhost:8000/health
+curl -N -X POST http://localhost:8000/qa/ask -H "Authorization: Bearer YOUR_TOKEN" -H "Content-Type: application/json" -d '{"question":"What does this document say?","limit":5}'
 ```
 
-Expected health JSON: `{"status":"ok"}`. OpenAPI docs: `http://localhost:8000/docs`. PostgreSQL and Qdrant and PostgreSQL are internal Compose services. The API uses both for indexing and retrieval.
+Events are `token` (`{"text":"..."}`), `citations` (`{"sources":[{"number":1,"chunk_id":"...","document_id":"...","filename":"...","page_number":2,"text":"..."}]}`), `refusal`, `error`, and `done`. The backend only emits numbered citations for IDs returned in its own retrieval results; invented IDs are dropped. Text is withheld until the provider supplies at least one valid citation, then streams incrementally. If no valid citation appears, the answer is refused. The backend cannot guarantee claim-by-claim faithfulness; evaluation is required.
 
-Document endpoints: `POST /documents` takes multipart `file` (PDF only), returns 201 and a `queued` record; `GET /documents` lists only your documents; `GET /documents/{document_id}` returns metadata or 404 when absent or not owned. The upload checks filename extension, declared MIME, `%PDF-` signature, parseability, encrypted status, page presence, and byte limit. It hashes the streamed file and rejects duplicate SHA-256 values per user with HTTP 409. Local files have opaque UUID-based paths; returned metadata never exposes storage paths. Storage is local, not cloud-backed. Max PDF size defaults to 10 MiB, configurable with `MAX_UPLOAD_BYTES`. `STORAGE_DIR` defaults to `storage` in local Python and `/app/storage` in Compose. Newly uploaded files start as `queued` and ingestion runs as an in-process FastAPI background task after the HTTP response. Text-based PDFs become `ready` after Qdrant indexing succeeds; scanned/image-only PDFs become `failed` because OCR is not implemented. Parser safeguards do not fully defend against every malicious PDF; do not expose the MVP publicly yet.\n\nThe authentication endpoints are `POST /auth/register` (201), `POST /auth/login` (JWT access token), and `GET /auth/me` (Bearer token required). Registration requires at least 12 password characters. Email addresses are case-folded at the API boundary; existing pre-normalization database records should be migrated before accepting public registrations. Token lifetime defaults to 30 minutes. There is no refresh-token or login rate-limiting support yet, and this MVP must not be exposed to the public internet without those controls.
-
-For local checks:
+## Tests
 
 ```bash
 python -m pip install -e './backend[dev]'
-make lint
-make test
+python -m ruff check backend
+python -m pytest backend/tests -q
 ```
 
-The database integration tests are skipped by default outside CI. To run them locally, use a PostgreSQL database with the migration applied, set POSTGRES_HOST/PORT and POSTGRES_PASSWORD appropriately, and use `RUN_DB_TESTS=1 python -m pytest backend/tests -q`. CI runs the migration and the integration tests against PostgreSQL 16. `make migrate` uses the running API container and does not execute automatically when starting the stack.
+Integration tests need migrated PostgreSQL and `RUN_DB_TESTS=1`; Qdrant tests also need `RUN_VECTOR_TESTS=1`. GitHub Actions provides both services. LLM HTTP behavior uses fake streams; CI does **not** download weights, run Ollama, call paid APIs, or verify full Docker runtime.
 
-Stop containers with `make down`. Docker Compose startup was not executed in the authoring environment because Docker was unavailable; verify it locally. PostgreSQL credentials are read from the uncommitted .env file; the example value is for local setup only. Changing credentials after initializing a database volume does not update the existing PostgreSQL user password. Remove the volume only if you intend to destroy local data.
+## Limitations
 
-\n## Upload verification\n\nIn PowerShell, use Swagger UI at `http://localhost:8000/docs` to register, log in and authorize with the access token. Then call `POST /documents` using a small text-based PDF and inspect `GET /documents`. The initial upload response may show `status: queued`. Poll `GET /documents/{document_id}` for `ready` or `failed`; this is an in-process background task, not a durable queue. The status may remain `processing` after an API process crash.\n\nFor real PostgreSQL-backed integration tests outside CI, set `RUN_DB_TESTS=1` with a migrated database and run `python -m pytest backend/tests -q`. CI runs these against PostgreSQL 16. Keep the `uploads_data` Docker volume if you want to preserve files across restarts. The application does not currently reconcile files left behind by a process crash or recover interrupted ingestion tasks. Partially indexed Qdrant points are hidden from search by PostgreSQL's ready-status check.\n\n## Ingestion (phase 6)
-
-Uploaded PDF files are checked with pdfplumber (maximum 200 pages). Nonempty pages are extracted separately; blank pages are skipped while their page numbers remain stable. Arabic retrieval text removes tatweel and combining marks, folds alef and alif maqsura/yaa variants, and maps Arabic-Indic and Eastern Arabic digits to ASCII digits. The original extracted text is stored separately from normalized text.
-
-Chunks are paragraph-aware, target at most 900 characters, overlap up to about 120 characters, and never span multiple pages. Status transitions: queued -> processing -> ready, or processing -> failed for unreadable/empty PDFs. The ingestion task uses a fresh database session after the upload response is committed. It does not use a durable queue; there are no automatic retries or OCR. It now computes dense embeddings and indexes into Qdrant before marking a document ready.
-
-PDF extraction can produce reversed or disordered Arabic glyph sequences. The app does not reverse arbitrary RTL runs because that corrupts correctly extracted text. Better bidi handling and geometry-based citations require dedicated fixtures.
-
-## Dense retrieval (phase 7)
-
-The CPU embedder uses `intfloat/multilingual-e5-small` (384 dimensions), adding `passage:` and `query:` prefixes and L2-normalizing embeddings. The model is loaded lazily and cached once per API process; model weights download on first indexing/search and persist in the Compose `model_cache` volume. The Docker image includes the optional embeddings dependencies; direct Python development requires `pip install -e './backend[dev,embeddings]'`. Installing torch and downloading model weights can take significant disk space and time on a laptop. CI uses deterministic fake vectors with real Qdrant, so CI does not measure the actual model's semantic relevance or throughput.
-
-On ingestion, chunks are committed in PostgreSQL with `processing` status, embeddings are generated, and Qdrant points are upserted with stable IDs from document ID and chunk ordinal. After indexing finishes the document becomes `ready`. Repeated upserts of the same chunk do not duplicate points. The current pipeline does not automatically recover crashes or remove obsolete points after changed chunk counts; a later retry/reconciliation task is needed.
-
-`POST /search` requires a Bearer token and JSON body `{"question":"ما هو موضوع التقرير؟","limit":5}`. Results contain chunk ID, document ID, filename, page number, original passage and similarity score. Search always includes a Qdrant `user_id` filter; a second ownership and `ready` filter is applied in PostgreSQL. Users cannot pass a `user_id` in the request. Search has no LLM answer or citation synthesis yet.
-
-Real Qdrant tenant isolation and idempotence tests run in CI. Local tests requiring Qdrant additionally need `RUN_VECTOR_TESTS=1` and a reachable `QDRANT_URL`. Avoid exposing Qdrant publicly or sharing the same collection with a different embedding model.
-
-## Evaluation table
-
-The planned comparison will be populated only after local runs over a versioned bilingual dataset.
-
-| Retrieval configuration | Hit@5 | MRR@10 | Latency p50 / p95 |
-| --- | --- | --- | --- |
-| Dense only | Not measured | Not measured | Not measured |
-| Sparse only | Not measured | Not measured | Not measured |
-| Hybrid RRF | Not measured | Not measured | Not measured |
-| Hybrid + reranker | Not measured | Not measured | Not measured |
-
-## Known limitations
-
-Database schema now implemented; future architecture remains a design. Email normalization, JWT authentication and per-user upload deduplication are implemented; page-based extraction and chunking run in phase 6; dense vector indexing and page-scoped retrieval run in phase 7. LLM citations and answers remain pending. PDF text highlighting is not guaranteed by character offsets alone: precise text-layer spans or bounding-box mapping must be retained during extraction. OCR text alignment will need a separate mapping and confidence tracking. LLM citations require backend validation and cannot prove every individual claim without further evidence checks.
-
-## Demo
-
-Demo GIF: pending first usable release.
+This is a local-development MVP, not a public production service. There is no OCR, refresh token, rate limiting, durable queue, automatic ingestion recovery, cache, prompt-injection guarantee, PDF highlighting, or frontend. Cosine similarity threshold `QA_MIN_SCORE=0.45` is an uncalibrated heuristic. On cancellation the server closes the provider stream when possible, but providers may still bill for already processed tokens. Incomplete ingestion may require manual intervention. Do not expose the API publicly without hardening.
 
 ## License
 
-Licensed under the [MIT License](LICENSE).
+[MIT](LICENSE).

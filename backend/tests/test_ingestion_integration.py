@@ -87,6 +87,7 @@ async def test_scanned_pdf_is_marked_failed_instead_of_ready(tmp_path: Path) -> 
     try:
         async with sessions.begin() as session:
             session.add(User(id=owner, email=f"{owner}@example.com", password_hash="hash"))
+            await session.flush()
             session.add(Document(
                 id=document_id, user_id=owner,
                 original_name="scanned.pdf", storage_key=f"{owner}/{document_id}.pdf",

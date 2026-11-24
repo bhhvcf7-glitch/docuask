@@ -1,0 +1,48 @@
+{"id":"ar_library_01","language":"ar","question":"في أي حي افتتح الفرع الرئيسي لمكتبة السحاب؟","answer":"حي الربيع","expected_document":"ar_library.pdf","expected_page":1,"answerable":true}
+{"id":"ar_library_02","language":"ar","question":"كم كتابا ورقيا كان في المكتبة عند افتتاحها؟","answer":"4200 كتاب","expected_document":"ar_library.pdf","expected_page":1,"answerable":true}
+{"id":"ar_library_03","language":"ar","question":"متى تبدأ ساعات العمل في مكتبة السحاب؟","answer":"الثامنة صباحا","expected_document":"ar_library.pdf","expected_page":1,"answerable":true}
+{"id":"ar_library_04","language":"ar","question":"كم تستمر إعارة الكتب؟","answer":"14 يوما","expected_document":"ar_library.pdf","expected_page":1,"answerable":true}
+{"id":"ar_library_05","language":"ar","question":"من هي مديرة المكتبة؟","answer":"نورة السالم","expected_document":"ar_library.pdf","expected_page":1,"answerable":true}
+{"id":"ar_library_06","language":"ar","question":"ما اسم القاعة المخصصة للقراءة الهادئة؟","answer":"قاعة النخيل","expected_document":"ar_library.pdf","expected_page":2,"answerable":true}
+{"id":"ar_library_07","language":"ar","question":"كم عدد أعضاء نادي القراءة؟","answer":"35 عضوا","expected_document":"ar_library.pdf","expected_page":2,"answerable":true}
+{"id":"ar_library_08","language":"ar","question":"في أي يوم تقام ورشة الكتابة الأسبوعية؟","answer":"الثلاثاء","expected_document":"ar_library.pdf","expected_page":2,"answerable":true}
+{"id":"ar_library_09","language":"ar","question":"في أي شهر تستقبل المكتبة الكتب المتبرع بها؟","answer":"مارس","expected_document":"ar_library.pdf","expected_page":2,"answerable":true}
+{"id":"ar_library_10","language":"ar","question":"كم حاسوبا يتوفر في الفرع؟","answer":"12 جهاز حاسوب","expected_document":"ar_library.pdf","expected_page":2,"answerable":true}
+{"id":"ar_water_01","language":"ar","question":"أين توجد محطة وادي المطر؟","answer":"منطقة الصفاء","expected_document":"ar_water.pdf","expected_page":1,"answerable":true}
+{"id":"ar_water_02","language":"ar","question":"ما سعة خزان محطة وادي المطر؟","answer":"1800 متر مكعب","expected_document":"ar_water.pdf","expected_page":1,"answerable":true}
+{"id":"ar_water_03","language":"ar","question":"كم مضخة رئيسية تستخدم المحطة؟","answer":"ثلاثة مضخات","expected_document":"ar_water.pdf","expected_page":1,"answerable":true}
+{"id":"ar_water_04","language":"ar","question":"ما وقت بدء جولة التفتيش اليومية؟","answer":"السابعة صباحا","expected_document":"ar_water.pdf","expected_page":1,"answerable":true}
+{"id":"ar_water_05","language":"ar","question":"من المسؤول عن فريق التشغيل؟","answer":"مازن حمد","expected_document":"ar_water.pdf","expected_page":1,"answerable":true}
+{"id":"ar_water_06","language":"ar","question":"كم مرة تفحص المحطة جودة المياه يوميا؟","answer":"مرتين يوميا","expected_document":"ar_water.pdf","expected_page":2,"answerable":true}
+{"id":"ar_water_07","language":"ar","question":"متى أضيف نظام التنبيه الآلي؟","answer":"فبراير","expected_document":"ar_water.pdf","expected_page":2,"answerable":true}
+{"id":"ar_water_08","language":"ar","question":"كم يوما تستغرق الصيانة الدورية؟","answer":"خمسة أيام","expected_document":"ar_water.pdf","expected_page":2,"answerable":true}
+{"id":"ar_water_09","language":"ar","question":"كم فنيا يعمل ضمن فريق الصيانة؟","answer":"ثمانية فنيين","expected_document":"ar_water.pdf","expected_page":2,"answerable":true}
+{"id":"ar_water_10","language":"ar","question":"ما رقم خط البلاغات عن الأعطال؟","answer":"144","expected_document":"ar_water.pdf","expected_page":2,"answerable":true}
+{"id":"en_transit_01","language":"en","question":"When did the Northbridge bus pilot start?","answer":"April 2024","expected_document":"en_transit.pdf","expected_page":1,"answerable":true}
+{"id":"en_transit_02","language":"en","question":"Which two locations does Route C connect?","answer":"Cedar Park and Riverside Station","expected_document":"en_transit.pdf","expected_page":1,"answerable":true}
+{"id":"en_transit_03","language":"en","question":"How many electric buses are in the pilot?","answer":"twelve","expected_document":"en_transit.pdf","expected_page":1,"answerable":true}
+{"id":"en_transit_04","language":"en","question":"What is the earliest weekday departure time?","answer":"6:15 a.m.","expected_document":"en_transit.pdf","expected_page":1,"answerable":true}
+{"id":"en_transit_05","language":"en","question":"How much is a standard one-way ticket?","answer":"three dollars","expected_document":"en_transit.pdf","expected_page":1,"answerable":true}
+{"id":"en_transit_06","language":"en","question":"How many passengers answered the survey?","answer":"640","expected_document":"en_transit.pdf","expected_page":2,"answerable":true}
+{"id":"en_transit_07","language":"en","question":"How long does a typical charging session take?","answer":"forty minutes","expected_document":"en_transit.pdf","expected_page":2,"answerable":true}
+{"id":"en_transit_08","language":"en","question":"How many stations are on Route C?","answer":"nine","expected_document":"en_transit.pdf","expected_page":2,"answerable":true}
+{"id":"en_transit_09","language":"en","question":"Who manages the transit pilot?","answer":"Elena Torres","expected_document":"en_transit.pdf","expected_page":2,"answerable":true}
+{"id":"en_transit_10","language":"en","question":"In which month is the next fleet inspection?","answer":"November 2024","expected_document":"en_transit.pdf","expected_page":2,"answerable":true}
+{"id":"en_garden_01","language":"en","question":"When was the Brookfield garden opened?","answer":"September 2023","expected_document":"en_garden.pdf","expected_page":1,"answerable":true}
+{"id":"en_garden_02","language":"en","question":"How many raised beds does the garden have?","answer":"twenty-four","expected_document":"en_garden.pdf","expected_page":1,"answerable":true}
+{"id":"en_garden_03","language":"en","question":"When do the garden volunteers meet?","answer":"Saturday morning","expected_document":"en_garden.pdf","expected_page":1,"answerable":true}
+{"id":"en_garden_04","language":"en","question":"Where can visitors find the seed library?","answer":"east shed","expected_document":"en_garden.pdf","expected_page":1,"answerable":true}
+{"id":"en_garden_05","language":"en","question":"Who coordinates the community garden?","answer":"Daniel Okafor","expected_document":"en_garden.pdf","expected_page":1,"answerable":true}
+{"id":"en_garden_06","language":"en","question":"How much water does the garden tank hold?","answer":"900 liters","expected_document":"en_garden.pdf","expected_page":2,"answerable":true}
+{"id":"en_garden_07","language":"en","question":"When did the compost program begin?","answer":"January 2024","expected_document":"en_garden.pdf","expected_page":2,"answerable":true}
+{"id":"en_garden_08","language":"en","question":"How many schools take part in the project?","answer":"Seven","expected_document":"en_garden.pdf","expected_page":2,"answerable":true}
+{"id":"en_garden_09","language":"en","question":"What month hosts the harvest festival?","answer":"October","expected_document":"en_garden.pdf","expected_page":2,"answerable":true}
+{"id":"en_garden_10","language":"en","question":"At what time does the tool lending desk close?","answer":"5 p.m.","expected_document":"en_garden.pdf","expected_page":2,"answerable":true}
+{"id":"unanswerable_01","language":"ar","question":"كم يبلغ راتب مديرة مكتبة السحاب؟","answer":null,"expected_document":null,"expected_page":null,"answerable":false}
+{"id":"unanswerable_02","language":"ar","question":"ما لون الجدران في مكتبة السحاب؟","answer":null,"expected_document":null,"expected_page":null,"answerable":false}
+{"id":"unanswerable_03","language":"ar","question":"كم تكلفة بناء محطة وادي المطر؟","answer":null,"expected_document":null,"expected_page":null,"answerable":false}
+{"id":"unanswerable_04","language":"ar","question":"متى تأسست شركة مضخات المحطة؟","answer":null,"expected_document":null,"expected_page":null,"answerable":false}
+{"id":"unanswerable_05","language":"en","question":"What is the Northbridge driver's annual salary?","answer":null,"expected_document":null,"expected_page":null,"answerable":false}
+{"id":"unanswerable_06","language":"en","question":"Who designed the battery chemistry for the transit buses?","answer":null,"expected_document":null,"expected_page":null,"answerable":false}
+{"id":"unanswerable_07","language":"en","question":"What is the Brookfield garden's annual insurance premium?","answer":null,"expected_document":null,"expected_page":null,"answerable":false}
+{"id":"unanswerable_08","language":"en","question":"How many visitors attended the garden in December 2025?","answer":null,"expected_document":null,"expected_page":null,"answerable":false}

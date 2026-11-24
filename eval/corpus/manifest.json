@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "license": "CC0-1.0",
+  "kind": "fictional_open_evaluation_documents",
+  "description": "Original fictional reference passages released under CC0 as reproducible Arabic/English text-layer PDFs. Not an independent real-world PDF benchmark.",
+  "documents": [
+    {
+      "id": "ar_library",
+      "filename": "ar_library.pdf",
+      "language": "ar",
+      "title": "سجل مكتبة السحاب",
+      "pages": [
+        {
+          "number": 1,
+          "lines": [
+            "افتتحت مكتبة السحاب فرعها الرئيسي في حي الربيع.",
+            "بلغ عدد الكتب الورقية عند الافتتاح 4200 كتاب.",
+            "تبدأ ساعات العمل في الثامنة صباحا.",
+            "مدة استعارة الكتب في المكتبة 14 يوما.",
+            "تشرف على المكتبة المديرة نورة السالم."
+          ]
+        },
+        {
+          "number": 2,
+          "lines": [
+            "سميت قاعة المطالعة الهادئة قاعة النخيل.",
+            "يضم نادي القراءة في المكتبة 35 عضوا.",
+            "تعقد ورشة الكتابة يوم الثلاثاء من كل أسبوع.",
+            "تستقبل المكتبة تبرعات الكتب في شهر مارس.",
+            "يتوفر في فرع المكتبة 12 جهاز حاسوب."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ar_water",
+      "filename": "ar_water.pdf",
+      "language": "ar",
+      "title": "تقرير محطة وادي المطر",
+      "pages": [
+        {
+          "number": 1,
+          "lines": [
+            "تقع محطة وادي المطر لتوزيع المياه في منطقة الصفاء.",
+            "تبلغ سعة خزان المحطة 1800 متر مكعب.",
+            "تستخدم المحطة ثلاثة مضخات رئيسية.",
+            "تبدأ جولة التفتيش اليومية الساعة السابعة صباحا.",
+            "يرأس فريق التشغيل المهندس مازن حمد."
+          ]
+        },
+        {
+          "number": 2,
+          "lines": [
+            "تجرى فحوص جودة المياه مرتين يوميا.",
+            "أضيف نظام التنبيه الآلي في شهر فبراير.",
+            "تستمر خطة الصيانة الدورية خمسة أيام.",
+            "يضم فريق الصيانة ثمانية فنيين.",
+            "يخصص خط الاتصال 144 لاستقبال بلاغات الأعطال."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "en_transit",
+      "filename": "en_transit.pdf",
+      "language": "en",
+      "title": "Northbridge Transit Pilot",
+      "pages": [
+        {
+          "number": 1,
+          "lines": [
+            "The Northbridge bus pilot began in April 2024.",
+            "Route C connects Cedar Park to Riverside Station.",
+            "The pilot operates twelve electric buses.",
+            "The earliest weekday departure is at 6:15 a.m.",
+            "A standard one-way ticket costs three dollars."
+          ]
+        },
+        {
+          "number": 2,
+          "lines": [
+            "The passenger survey received 640 responses.",
+            "The average charging session lasts forty minutes.",
+            "Route C stops at nine stations.",
+            "The project manager is Elena Torres.",
+            "The next fleet inspection is scheduled for November 2024."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "en_garden",
+      "filename": "en_garden.pdf",
+      "language": "en",
+      "title": "Brookfield Community Garden",
+      "pages": [
+        {
+          "number": 1,
+          "lines": [
+            "The Brookfield garden opened in September 2023.",
+            "The garden contains twenty-four raised beds.",
+            "Volunteers meet every Saturday morning.",
+            "The seed library is housed in the east shed.",
+            "The garden coordinator is Daniel Okafor."
+          ]
+        },
+        {
+          "number": 2,
+          "lines": [
+            "The rainwater tank holds 900 liters.",
+            "The compost program started in January 2024.",
+            "Seven schools participate in the garden project.",
+            "The harvest festival takes place in October.",
+            "The tool lending desk closes at 5 p.m."
+          ]
+        }
+      ]
+    }
+  ]
+}

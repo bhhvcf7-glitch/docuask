@@ -1,3 +1,4 @@
+import asyncio
 import json
 from uuid import uuid4
 
@@ -119,15 +120,17 @@ async def test_empty_retrieval_refuses() -> None:
 async def test_disconnect_closes_provider() -> None:
     provider = FakeProvider(["a", "b"])
 
+    checks = iter([False, False, True])
+
     async def disconnected():
-        return True
+        return next(checks)
 
     parts = [p async for p in answer_events(
         None, user_id=uuid4(), question="What?", limit=5,
         settings=Settings(_env_file=None), provider=provider,
         disconnect=disconnected, search=search,
     )]
-    assert parts == [] and provider.closed
+    assert unpack(parts) == [("generating", {})] and provider.closed
 
 
 @pytest.mark.asyncio
@@ -137,6 +140,7 @@ async def test_closing_sse_generator_closes_llm_stream() -> None:
         None, user_id=uuid4(), question="What?", limit=5,
         settings=Settings(_env_file=None), provider=provider, search=search,
     )
+    assert (await anext(stream)).startswith("event: generating")
     assert (await anext(stream)).startswith("event: token")
     await stream.aclose()
     assert provider.closed
@@ -178,7 +182,7 @@ async def test_uncited_model_answer_is_refused() -> None:
         settings=Settings(_env_file=None),
         provider=FakeProvider(["unverified statement"]), search=search,
     )])
-    assert records[0][0] == "refusal"
+    assert records[1][0] == "refusal"
     assert all(kind != "token" for kind, _ in records)
 
 
@@ -196,7 +200,7 @@ async def test_invalid_answer_is_never_released(tokens):
         None, user_id=uuid4(), question="Revenue?", limit=5,
         settings=Settings(_env_file=None), provider=FakeProvider(tokens), search=search,
     )])
-    assert [kind for kind, _ in records] == ["refusal", "done"]
+    assert [kind for kind, _ in records] == ["generating", "refusal", "done"]
 
 
 @pytest.mark.asyncio
@@ -206,7 +210,7 @@ async def test_bilingual_cited_claims_are_released():
         settings=Settings(_env_file=None),
         provider=FakeProvider(["ارتفعت الإيرادات [", "1]."]), search=search,
     )])
-    assert [kind for kind, _ in records] == ["token", "citations", "done"]
+    assert [kind for kind, _ in records] == ["generating", "token", "citations", "done"]
 
 
 @pytest.mark.asyncio
@@ -216,7 +220,7 @@ async def test_raw_answer_limit_counts_invalid_references():
         settings=Settings(_env_file=None, qa_max_answer_chars=100),
         provider=FakeProvider(["[99]" * 30]), search=search,
     )])
-    assert [kind for kind, _ in records] == ["error"]
+    assert [kind for kind, _ in records] == ["generating", "error"]
 
 
 @pytest.mark.parametrize(("label", "expected"), [
@@ -270,8 +274,66 @@ async def test_grouped_qa_response(tokens, valid):
         settings=Settings(_env_file=None), provider=FakeProvider(tokens), search=two_hits,
     )])
     if valid:
-        assert [kind for kind, _ in records] == ["token", "citations", "done"]
-        assert records[0][1]["text"] == "Evidence [1][2]"
-        assert [s["number"] for s in records[1][1]["sources"]] == [1, 2]
+        assert [kind for kind, _ in records] == ["generating", "token", "citations", "done"]
+        assert records[1][1]["text"] == "Evidence [1][2]"
+        assert [s["number"] for s in records[2][1]["sources"]] == [1, 2]
     else:
-        assert [kind for kind, _ in records] == ["refusal", "done"]
+        assert [kind for kind, _ in records] == ["generating", "refusal", "done"]
+
+
+class SlowProvider:
+    def __init__(self):
+        self.started = asyncio.Event()
+        self.closed = False
+
+    async def stream(self, messages):
+        try:
+            self.started.set()
+            yield "Unvalidated text [1]"
+            await asyncio.Future()
+        finally:
+            self.closed = True
+
+
+@pytest.mark.asyncio
+async def test_generation_timeout_releases_no_text():
+    provider = SlowProvider()
+    records = unpack([p async for p in answer_events(
+        None, user_id=uuid4(), question="What?", limit=5,
+        settings=Settings(_env_file=None, qa_generation_timeout_seconds=.02),
+        provider=provider, search=search,
+    )])
+    assert records == [
+        ("generating", {}),
+        ("error", {"message": "Answer generation timed out"}),
+    ]
+    assert provider.closed
+
+
+@pytest.mark.asyncio
+async def test_cancel_during_generation_closes_provider():
+    provider = SlowProvider()
+    stream = answer_events(
+        None, user_id=uuid4(), question="What?", limit=5,
+        settings=Settings(_env_file=None), provider=provider, search=search,
+    )
+    assert unpack([await anext(stream)]) == [("generating", {})]
+    task = asyncio.create_task(anext(stream))
+    await asyncio.wait_for(provider.started.wait(), timeout=2)
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    await stream.aclose()
+    assert provider.closed
+
+
+@pytest.mark.asyncio
+async def test_close_after_progress_does_not_start_provider():
+    provider = SlowProvider()
+    stream = answer_events(
+        None, user_id=uuid4(), question="What?", limit=5,
+        settings=Settings(_env_file=None), provider=provider, search=search,
+    )
+    assert unpack([await anext(stream)]) == [("generating", {})]
+    await stream.aclose()
+    assert not provider.started.is_set()

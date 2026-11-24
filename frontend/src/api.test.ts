@@ -27,3 +27,12 @@ describe('parseSse', () => {
     ])
   })
 })
+
+
+it('parses a split generation progress event without answer text', () => {
+  const first = parseSse('event: generating\ndata: {')
+  expect(first.events).toEqual([])
+  expect(parseSse(first.rest + '}\n\n').events).toEqual([
+    { type: 'generating', payload: {} },
+  ])
+})

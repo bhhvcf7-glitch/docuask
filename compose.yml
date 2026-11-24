@@ -36,6 +36,7 @@ services:
       RERANK_ENABLED: ${RERANK_ENABLED:-false}
       RERANK_CANDIDATES: ${RERANK_CANDIDATES:-20}
       QA_MIN_SCORE: ${QA_MIN_SCORE:-0.45}
+      QA_GENERATION_TIMEOUT_SECONDS: ${QA_GENERATION_TIMEOUT_SECONDS:-180}
       QA_MAX_ANSWER_CHARS: ${QA_MAX_ANSWER_CHARS:-10000}
     extra_hosts:
       - "host.docker.internal:host-gateway"

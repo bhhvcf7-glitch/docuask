@@ -1,3 +1,4 @@
+import asyncio
 import json
 import re
 from collections.abc import AsyncIterator
@@ -195,20 +196,30 @@ async def answer_events(
         yield event("done", {})
         return
 
+    if disconnect is not None and await disconnect():
+        return
+    yield event("generating", {})
+    if disconnect is not None and await disconnect():
+        return
+
     citations = CitationFilter(hits)
     generator = provider.stream(make_messages(question, hits))
     pieces: list[str] = []
     length = 0
     try:
         try:
-            async for token in generator:
-                if disconnect is not None and await disconnect():
-                    return
-                length += len(token)
-                if length > settings.qa_max_answer_chars:
-                    yield event("error", {"message": "Answer length limit reached"})
-                    return
-                pieces.append(citations.push(token))
+            async with asyncio.timeout(settings.qa_generation_timeout_seconds):
+                async for token in generator:
+                    if disconnect is not None and await disconnect():
+                        return
+                    length += len(token)
+                    if length > settings.qa_max_answer_chars:
+                        yield event("error", {"message": "Answer length limit reached"})
+                        return
+                    pieces.append(citations.push(token))
+        except TimeoutError:
+            yield event("error", {"message": "Answer generation timed out"})
+            return
         except ProviderUnavailable:
             yield event("error", {"message": "Answer provider is unavailable"})
             return

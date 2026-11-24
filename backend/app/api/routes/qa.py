@@ -1,4 +1,5 @@
 import json
+from contextlib import aclosing
 from types import SimpleNamespace
 from typing import Annotated
 
@@ -57,7 +58,7 @@ async def ask(
     async def stream():
         parts = []
         buffered = []
-        async for item in answer_events(
+        async with aclosing(answer_events(
             session,
             user_id=owner,
             question=question,
@@ -66,34 +67,36 @@ async def ask(
             provider=provider,
             disconnect=request.is_disconnected,
             search=retrieve,
-        ):
-            if payload.conversation_id is None:
+        )
+            async for item in events:
+
+                if payload.conversation_id is None:
+                    yield item
+                    continue
+                kind = item.splitlines()[0][7:]
+                data = json.loads(item.splitlines()[1][6:])
+                if kind == "token":
+                    parts.append(data["text"])
+                if kind in {"token", "citations"}:
+                    buffered.append(item)
+                    continue
+                if kind == "done" and parts:
+                    if not await owned_conversation(session, owner, payload.conversation_id):
+                        yield event("error", {"message": "Conversation no longer exists"})
+                        return
+                    session.add(ConversationTurn(
+                        conversation_id=payload.conversation_id,
+                        question=payload.question, answer="".join(parts),
+                    ))
+                    try:
+                        await session.commit()
+                    except IntegrityError:
+                        await session.rollback()
+                        yield event("error", {"message": "Conversation could not be saved"})
+                        return
+                    for saved in buffered:
+                        yield saved
                 yield item
-                continue
-            kind = item.splitlines()[0][7:]
-            data = json.loads(item.splitlines()[1][6:])
-            if kind == "token":
-                parts.append(data["text"])
-            if kind in {"token", "citations"}:
-                buffered.append(item)
-                continue
-            if kind == "done" and parts:
-                if not await owned_conversation(session, owner, payload.conversation_id):
-                    yield event("error", {"message": "Conversation no longer exists"})
-                    return
-                session.add(ConversationTurn(
-                    conversation_id=payload.conversation_id,
-                    question=payload.question, answer="".join(parts),
-                ))
-                try:
-                    await session.commit()
-                except IntegrityError:
-                    await session.rollback()
-                    yield event("error", {"message": "Conversation could not be saved"})
-                    return
-                for saved in buffered:
-                    yield saved
-            yield item
 
     return StreamingResponse(
         stream(),

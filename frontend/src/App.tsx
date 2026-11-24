@@ -25,7 +25,7 @@ const copy = {
     ready: 'جاهز', queued: 'في الانتظار', processing: 'قيد المعالجة', failed: 'فشل',
     askTitle: 'اسأل مستنداتك', askHelp: 'أسئلتك تُبحث داخل مستنداتك فقط.',
     placeholder: 'مثال: ما أهم نتائج التقرير؟', ask: 'اسأل',
-    thinking: 'جارٍ البحث والإجابة...', stop: 'إيقاف', sources: 'المصادر',
+    thinking: 'جارٍ البحث في المستندات...', generating: 'جارٍ توليد الإجابة والتحقق منها...', stop: 'إيقاف', sources: 'المصادر',
     page: 'صفحة', prompt: 'ارفع مستندًا جاهزًا ثم اكتب سؤالك للبدء.',
     cited: 'المصادر مرتبطة بالمقاطع المسترجعة، لكنها لا تضمن صحة كل جملة.',
     note: 'الملفات تخص حسابك فقط. لا ترفع بيانات شديدة الحساسية في هذه النسخة التجريبية.',
@@ -42,7 +42,7 @@ const copy = {
     ready: 'Ready', queued: 'Queued', processing: 'Processing', failed: 'Failed',
     askTitle: 'Ask your documents', askHelp: 'Questions are answered from your documents only.',
     placeholder: 'For example: What are the key findings?', ask: 'Ask',
-    thinking: 'Searching and answering...', stop: 'Stop', sources: 'Sources',
+    thinking: 'Searching documents...', generating: 'Generating and validating answer...', stop: 'Stop', sources: 'Sources',
     page: 'Page', prompt: 'Upload a ready document, then ask a question.',
     cited: 'Citations link to retrieved excerpts, but cannot guarantee every claim is correct.',
     note: 'Files are scoped to your account. Avoid highly sensitive documents in this development MVP.',
@@ -74,6 +74,7 @@ export default function App() {
   const [busy, setBusy] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [asking, setAsking] = useState(false)
+  const [generating, setGenerating] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const abortRef = useRef<AbortController | null>(null)
 
@@ -152,20 +153,24 @@ export default function App() {
     setAnswer('')
     setCitations([])
     const epoch = sessionEpoch()
+    setGenerating(false)
     setAsking(true)
     const controller = new AbortController()
     abortRef.current = controller
     try {
       let chat = conversationId
       if (!chat) {
-        const created = await api<{ id: string }>('/conversations', token, { method: 'POST' })
+        const created = await api<{ id: string }>('/conversations', token, { method: 'POST', signal: controller.signal })
         if (epoch !== sessionEpoch() || controller.signal.aborted) return
         chat = created.id
         setConversationId(chat)
       }
       await streamAnswer(token, prompt, controller.signal, (message) => {
         if (epoch !== sessionEpoch() || controller.signal.aborted) return
-        if (message.type === 'token') {
+        if (message.type === 'generating') {
+          setGenerating(true)
+        } else if (message.type === 'token') {
+          setGenerating(false)
           setAnswer(old => old + message.payload.text)
         } else if (message.type === 'citations') {
           setCitations(message.payload.sources)
@@ -182,6 +187,7 @@ export default function App() {
     } finally {
       if (abortRef.current === controller) {
         setAsking(false)
+        setGenerating(false)
         abortRef.current = null
       }
     }
@@ -192,6 +198,7 @@ export default function App() {
     abortRef.current?.abort()
     abortRef.current = null
     setAsking(false)
+    setGenerating(false)
     setUploading(false)
     setError('')
     setConversationId(undefined)
@@ -356,7 +363,7 @@ export default function App() {
                 <div className="answer-area">
                   <div className="answer-label"><Sparkles size={17} /><span>DocuAsk</span></div>
                   {answer && <p className="answer-text" dir="auto">{answer}</p>}
-                  {asking && <div className="loading-line"><LoaderCircle className="spin" size={15} />{t.thinking}</div>}
+                  {asking && <div className="loading-line" role="status"><LoaderCircle className="spin" size={15} />{generating ? t.generating : t.thinking}</div>}
                   {error && <p className="form-error" role="alert"><CircleAlert size={16} />{error}</p>}
                   {citations.length > 0 && (
                     <div className="sources">

@@ -20,6 +20,7 @@ export type Citation = {
 }
 
 export type StreamEvent =
+  | { type: 'generating'; payload: Record<string, never> }
   | { type: 'token'; payload: { text: string } }
   | { type: 'citations'; payload: { sources: Citation[] } }
   | { type: 'refusal'; payload: { answer: string } }
@@ -76,7 +77,7 @@ export function parseSse(buffer: string): { events: StreamEvent[]; rest: string 
       if (line.startsWith('event:')) name = line.slice(6).trim()
       if (line.startsWith('data:')) parts.push(line.slice(5).trimStart())
     }
-    if (!['token', 'citations', 'refusal', 'error', 'done'].includes(name)) continue
+    if (!['generating', 'token', 'citations', 'refusal', 'error', 'done'].includes(name)) continue
     try {
       events.push({ type: name, payload: JSON.parse(parts.join('\n')) } as StreamEvent)
     } catch {
@@ -112,6 +113,11 @@ export async function streamAnswer(
   const reader = response.body.getReader()
   const decoder = new TextDecoder()
   let pending = ''
+  let terminal = false
+  const dispatch = (message: StreamEvent) => {
+    if (message.type === 'done' || message.type === 'error') terminal = true
+    onEvent(message)
+  }
   try {
     while (true) {
       const { done, value } = await reader.read()
@@ -119,11 +125,12 @@ export async function streamAnswer(
       pending += decoder.decode(value, { stream: true })
       const parsed = parseSse(pending)
       pending = parsed.rest
-      for (const message of parsed.events) onEvent(message)
+      for (const message of parsed.events) dispatch(message)
     }
     pending += decoder.decode()
-    const final = parseSse(pending + '\n\n')
-    for (const message of final.events) onEvent(message)
+    const final = parseSse(pending)
+    for (const message of final.events) dispatch(message)
+    if (!terminal && !signal.aborted) throw new Error('Answer stream ended unexpectedly')
   } finally {
     await reader.cancel().catch(() => undefined)
     reader.releaseLock()

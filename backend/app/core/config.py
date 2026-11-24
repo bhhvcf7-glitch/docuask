@@ -43,6 +43,7 @@ class Settings(BaseSettings):
     rerank_enabled: bool = False
     rerank_candidates: int = Field(default=20, ge=2, le=50)
     qa_min_score: float = Field(default=0.45, ge=-1, le=1)
+    qa_generation_timeout_seconds: float = Field(default=180, gt=0, le=1800)
     qa_max_answer_chars: int = Field(default=10000, ge=100, le=100000)
 
     @model_validator(mode="after")

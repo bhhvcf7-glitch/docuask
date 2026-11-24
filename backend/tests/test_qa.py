@@ -75,7 +75,7 @@ def test_filter_keeps_original_source_numbers_and_ownership() -> None:
 
 @pytest.mark.asyncio
 async def test_answer_stream_only_cites_retrieved_numbers() -> None:
-    provider = FakeProvider(["Revenue [", "1]", " but not [99]"])
+    provider = FakeProvider(["Revenue [", "1]"])
     records = unpack([p async for p in answer_events(
         None, user_id=uuid4(), question="Revenue?", limit=5,
         settings=Settings(_env_file=None), provider=provider, search=search,
@@ -132,7 +132,7 @@ async def test_disconnect_closes_provider() -> None:
 
 @pytest.mark.asyncio
 async def test_closing_sse_generator_closes_llm_stream() -> None:
-    provider = FakeProvider(["first [1]", "second"])
+    provider = FakeProvider(["first [1]", "\nsecond [1]"])
     stream = answer_events(
         None, user_id=uuid4(), question="What?", limit=5,
         settings=Settings(_env_file=None), provider=provider, search=search,
@@ -180,3 +180,40 @@ async def test_uncited_model_answer_is_refused() -> None:
     )])
     assert records[0][0] == "refusal"
     assert all(kind != "token" for kind, _ in records)
+
+
+@pytest.mark.parametrize("tokens", [
+    ["Revenue grew [1]. Unsupported statement."],
+    ["Revenue grew [1] and invented [99]"],
+    ["Revenue grew [1]", "\nUnsupported claim"],
+    ["[1]"],
+    ["Revenue grew [1] [unfinished"],
+    ["Revenue grew [1] [" + "9" * 5000 + "]"],
+])
+@pytest.mark.asyncio
+async def test_invalid_answer_is_never_released(tokens):
+    records = unpack([p async for p in answer_events(
+        None, user_id=uuid4(), question="Revenue?", limit=5,
+        settings=Settings(_env_file=None), provider=FakeProvider(tokens), search=search,
+    )])
+    assert [kind for kind, _ in records] == ["refusal", "done"]
+
+
+@pytest.mark.asyncio
+async def test_bilingual_cited_claims_are_released():
+    records = unpack([p async for p in answer_events(
+        None, user_id=uuid4(), question="ما النتيجة؟", limit=5,
+        settings=Settings(_env_file=None),
+        provider=FakeProvider(["ارتفعت الإيرادات [", "1]."]), search=search,
+    )])
+    assert [kind for kind, _ in records] == ["token", "citations", "done"]
+
+
+@pytest.mark.asyncio
+async def test_raw_answer_limit_counts_invalid_references():
+    records = unpack([p async for p in answer_events(
+        None, user_id=uuid4(), question="Revenue?", limit=5,
+        settings=Settings(_env_file=None, qa_max_answer_chars=100),
+        provider=FakeProvider(["[99]" * 30]), search=search,
+    )])
+    assert [kind for kind, _ in records] == ["error"]

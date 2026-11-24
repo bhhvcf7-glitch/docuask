@@ -149,3 +149,7 @@ Set `RETRIEVAL_MODE=hybrid` and apply Alembic migrations. Dense retrieval remain
 ## Optional multilingual reranking
 
 Set `RERANK_ENABLED=true` with the embeddings extra installed. See [reranking and evaluation](docs/reranking.md).
+
+## Grounded QA citation validation
+
+Answers are buffered and structurally validated before SSE release. Each claim must end with valid retrieved source numbers; invalid, missing or incomplete references cause refusal. See [limitations and contract](docs/grounded-qa.md).

@@ -37,6 +37,7 @@ class OpenAICompatible:
                             value = json.loads(item)["choices"][0]["delta"].get("content")
                             if value:
                                 yield value
+                    raise ProviderUnavailable("Incomplete provider stream")
         except (httpx.HTTPError, ValueError, KeyError, IndexError) as exc:
             raise ProviderUnavailable from exc
 
@@ -64,6 +65,7 @@ class Ollama:
                             yield value
                         if payload.get("done"):
                             return
+                    raise ProviderUnavailable("Incomplete provider stream")
         except (httpx.HTTPError, ValueError, KeyError, IndexError) as exc:
             raise ProviderUnavailable from exc
 

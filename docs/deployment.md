@@ -22,3 +22,7 @@ The release audit additionally binds refresh retries to a session generation, an
 ## Document recovery
 
 At startup, stale queued and processing documents are marked failed. A periodic sweep checks queued documents only, using atomic conditional updates. STALE_QUEUED_MINUTES defaults to 30 and RECOVERY_INTERVAL_SECONDS to 60. Owners can retry failed documents. A slow active worker cannot be distinguished from a dead worker by elapsed time alone. Processing documents too recent at startup may remain stuck until another restart. Run one API instance; safe distributed recovery needs attempt fencing and leases or a durable queue. The SQL, file and vector operations do not share a transaction.
+
+## Proxy trust
+
+Production Caddy is the only trusted peer (172.30.50.2/32) on a dedicated proxy network. Caddy replaces incoming X-Forwarded-For with the direct client address. Do not expose the API port or attach untrusted workloads to that network. If the subnet conflicts with an existing network, change both the static address and trusted CIDR together. A CDN or another external proxy requires a separately reviewed trust configuration. The rate limiter is still per process; clients sharing a NAT address can share an auth bucket.

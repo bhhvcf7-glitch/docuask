@@ -5,6 +5,7 @@ services:
       dockerfile: backend/Dockerfile
     environment:
       APP_ENV: ${APP_ENV:-development}
+      TRUSTED_PROXIES: '${TRUSTED_PROXIES:-[]}'
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432

@@ -1,4 +1,5 @@
 from collections import OrderedDict, deque
+from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network, ip_address
 from time import monotonic
 
 
@@ -30,3 +31,38 @@ class RateLimiter:
         bucket.append(now)
         self.buckets.move_to_end(key)
         return True
+
+
+def parse_address(value: str) -> IPv4Address | IPv6Address:
+    if "%" in value:
+        raise ValueError("Scoped addresses are not supported")
+    address = ip_address(value.strip())
+    if isinstance(address, IPv6Address) and address.ipv4_mapped is not None:
+        return address.ipv4_mapped
+    return address
+
+
+def resolve_client_ip(
+    peer: str, forwarded: str, trusted: list[IPv4Network | IPv6Network],
+) -> str:
+    try:
+        direct = parse_address(peer)
+    except ValueError:
+        return peer
+
+    def is_trusted(address: IPv4Address | IPv6Address) -> bool:
+        return any(address.version == network.version and address in network for network in trusted)
+
+    if not is_trusted(direct) or not forwarded or len(forwarded) > 4096:
+        return str(direct)
+    parts = forwarded.split(",")
+    if len(parts) > 32:
+        return str(direct)
+    try:
+        chain = [parse_address(part) for part in parts]
+    except ValueError:
+        return str(direct)
+    for address in reversed(chain):
+        if not is_trusted(address):
+            return str(address)
+    return str(direct)

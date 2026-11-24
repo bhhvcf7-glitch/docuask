@@ -5,6 +5,9 @@ services:
       dockerfile: frontend/Dockerfile
     environment:
       DOCUASK_DOMAIN: ${DOCUASK_DOMAIN:?Set a DNS hostname}
+    networks:
+      proxy:
+        ipv4_address: 172.30.50.2
     ports:
       - "80:80"
       - "443:443"
@@ -22,6 +25,7 @@ services:
       dockerfile: backend/Dockerfile
     environment:
       APP_ENV: production
+      TRUSTED_PROXIES: '["172.30.50.2/32"]'
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
@@ -53,6 +57,9 @@ services:
       RERANK_CANDIDATES: ${RERANK_CANDIDATES:-20}
       QA_MIN_SCORE: ${QA_MIN_SCORE:-0.45}
       QA_MAX_ANSWER_CHARS: ${QA_MAX_ANSWER_CHARS:-10000}
+    networks:
+      default: {}
+      proxy: {}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     command: ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --no-proxy-headers"]
@@ -92,6 +99,12 @@ services:
     volumes:
       - qdrant_data:/qdrant/storage
     restart: unless-stopped
+
+networks:
+  proxy:
+    ipam:
+      config:
+        - subnet: 172.30.50.0/24
 
 volumes:
   caddy_data:

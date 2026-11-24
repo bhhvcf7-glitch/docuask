@@ -18,7 +18,7 @@ from app.api.routes.health import router as health_router
 from app.api.routes.qa import router as qa_router
 from app.api.routes.search import router as search_router
 from app.core.config import get_settings
-from app.core.limits import RateLimiter
+from app.core.limits import RateLimiter, resolve_client_ip
 from app.core.logging import configure_logging
 from app.core.resources import AppResources
 from app.core.security import verify_access_token
@@ -100,7 +100,10 @@ def create_app() -> FastAPI:
             path = request.url.path
             peer = request.client.host if request.client else "unknown"
             group = "auth" if path in {"/auth/login", "/auth/register", "/auth/refresh"} else "api"
-            identity = peer
+            identity = resolve_client_ip(
+                peer, ",".join(request.headers.getlist("x-forwarded-for")),
+                settings.trusted_proxies,
+            )
             if group == "api" and settings.jwt_secret is not None:
                 bearer = request.headers.get("Authorization", "")
                 if bearer.startswith("Bearer "):

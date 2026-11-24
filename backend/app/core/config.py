@@ -1,4 +1,5 @@
 from functools import lru_cache
+from ipaddress import IPv4Network, IPv6Network
 from pathlib import Path
 from typing import Literal
 
@@ -23,6 +24,7 @@ class Settings(BaseSettings):
     refresh_token_days: int = Field(default=14, ge=1, le=90)
     auth_rate_limit: int = Field(default=60, ge=1, le=1000)
     api_rate_limit: int = Field(default=180, ge=1, le=10000)
+    trusted_proxies: list[IPv4Network | IPv6Network] = Field(default_factory=list)
     storage_dir: Path = Path("storage")
     stale_processing_minutes: int = Field(default=30, ge=1, le=1440)
     stale_queued_minutes: int = Field(default=30, ge=1, le=1440)
@@ -45,6 +47,8 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_jwt_secret(self) -> "Settings":
+        if any(network.prefixlen == 0 for network in self.trusted_proxies):
+            raise ValueError("TRUSTED_PROXIES must not trust every address")
         if self.jwt_secret is not None and len(self.jwt_secret.get_secret_value()) < 32:
             raise ValueError("JWT_SECRET must contain at least 32 characters")
         if self.app_env == "production" and self.jwt_secret is None:

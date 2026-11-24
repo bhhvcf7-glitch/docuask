@@ -1,4 +1,4 @@
-> Historical design reference, including proposed components. See README for implemented capabilities.
+> Historical proposal only; superseded by [current architecture](../architecture.md). Proposed technologies are not implementation claims.
 
 # Architecture and boundaries
 

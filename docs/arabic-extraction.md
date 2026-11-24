@@ -6,7 +6,7 @@ Only nonempty text passing the same inspector replaces the primary output.
 A clean `pdfplumber` page is never replaced. Page numbering is unchanged and
 no text is blindly reversed.
 
-If both paths fail, the document is marked failed. An optional `OCR_ENABLED`
+If the page remains unreliable, extraction fails; empty pages may be skipped, and a wholly empty document fails. An optional `OCR_ENABLED`
 switch can add Tesseract OCR after those failures. OCR is **off by default**.
 Missing system packages and languages produce a specific user-safe failure
 rather than pretending OCR was performed.
@@ -38,8 +38,7 @@ license and remains isolated to the optional comparison tooling.
 
 `app/ingestion/arabic_words.txt` contains an explicitly maintained list
 of common and technical Arabic terms. The reversed-token detector checks
-normalized tokens against this list, requiring multiple independent reversed
-matches and a three-to-one advantage over normally oriented matches before
+normalized tokens against this list, requiring multiple reversed-token occurrences and a three-to-one advantage over normally oriented matches before
 marking the page unreliable. Tests cover technical sentences, valid Arabic
 and short mixed Arabic/English text. The list is **not** a language model,
 and the thresholds are conservative, not calibrated. Text is never reversed

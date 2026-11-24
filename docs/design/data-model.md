@@ -1,4 +1,4 @@
-> Original data-model proposal. Implemented tables: users, documents, chunks. Other entities in this document are not in the current database. Some proposed columns and constraints differ from the actual Alembic migrations.
+> Historical schema proposal only; see [current architecture and six implemented tables](../architecture.md) and the ORM/Alembic migrations.
 
 # Relational model (proposal)
 

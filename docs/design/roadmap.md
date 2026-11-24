@@ -1,4 +1,4 @@
-> Historical roadmap, not current implementation status. Phases 1–8 of the revised MVP and a minimal React UI are present. Evaluation, hybrid retrieval, reranking, OCR, refresh tokens, production deployment and the remaining items below are not implemented.
+> Historical roadmap only; see [current decisions and release gates](../decisions.md) for verified status.
 
 # Delivery plan
 
@@ -123,7 +123,7 @@ docuask/
 └── README.md
 ```
 
-The listed structure is the intended end state, not a claim that those modules already exist. Only phase 0 documents are currently present.
+The listed structure is the intended end state, not a claim that those modules already exist. At the time of this proposal only phase 0 documents were present.
 
 ## First implementation acceptance criteria
 

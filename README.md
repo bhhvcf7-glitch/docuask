@@ -1,5 +1,7 @@
 # DocuAsk
 
+[![CI](https://github.com/bhhvcf7-glitch/docuask/actions/workflows/ci.yml/badge.svg)](https://github.com/bhhvcf7-glitch/docuask/actions)
+
 Ask questions about Arabic and English PDFs and inspect citations on their original pages.
 
 ## Status
@@ -18,7 +20,12 @@ Ask questions about Arabic and English PDFs and inspect citations on their origi
 
 ## Quick start
 
-Install Git, Docker Compose and Node.js. Clone the repository and enter it.
+Install Git, Docker Compose v2 and Node.js 22. Clone the repository and enter it.
+
+```bash
+git clone https://github.com/bhhvcf7-glitch/docuask.git
+cd docuask
+```
 
 Windows (PowerShell):
 
@@ -34,7 +41,7 @@ cp .env.example .env
 nano .env
 ```
 
-Set a unique POSTGRES_PASSWORD and a random JWT_SECRET of at least 32 characters. Never commit .env. Run Ollama on the host and pull the configured model (default llama3.2:3b), or configure an OpenAI-compatible provider. Ensure the container can reach the provider without exposing Ollama publicly.
+Set a unique POSTGRES_PASSWORD and a random JWT_SECRET of at least 32 characters. Never commit .env. Run Ollama on the host and pull the configured model (default llama3.2:3b), or configure an OpenAI-compatible provider. For Docker, set `OLLAMA_URL=http://host.docker.internal:11434` in `.env` (the example localhost URL is for native Python). Ensure the host provider listens on an interface reachable from Docker, with firewall restrictions; do not expose Ollama publicly.
 
 ```bash
 docker compose up -d postgres qdrant
@@ -76,7 +83,7 @@ flowchart TD
 
 ## Evaluation
 
-Six synthetic PDFs, 36 pages, 72 answerable and 12 unanswerable questions. The following comparison was measured in GitHub Actions run 45419569734, not on the current release candidate.
+Six synthetic PDFs, 36 pages, 73 chunks (verified by corpus validation), 72 answerable and 12 unanswerable questions. The following comparison was measured in GitHub Actions run 45419569734, not on the current release candidate.
 
 | Metric | Dense | Hybrid | Hybrid + reranker |
 | --- | ---: | ---: | ---: |
@@ -112,11 +119,15 @@ PostgreSQL integration tests require RUN_DB_TESTS=1 and a migrated test database
 
 ## Documentation
 
-[Architecture](docs/design/architecture.md) · [Data model](docs/design/data-model.md) · [Local smoke](docs/local-smoke.md) · [Extraction](docs/arabic-extraction.md) · [Extractor comparison](docs/extraction/comparison.md) · [Evaluation](docs/eval/README.md) · [Results](docs/eval/production-results.md) · [Hybrid](docs/hybrid-retrieval.md) · [Reranking](docs/reranking.md) · [QA](docs/grounded-qa.md) · [Conversations](docs/conversations.md) · [Viewer](docs/pdf-viewer.md) · [Security](docs/security.md) · [Deployment](docs/deployment.md) · [Release audit](docs/release-audit.md)
+[Documentation index](docs/README.md) · [Architecture](docs/architecture.md) · [Evaluation](docs/eval/README.md) · [Security](docs/security.md) · [Arabic extraction](docs/arabic-extraction.md) · [Deployment](docs/deployment.md) · [Decisions and release gates](docs/decisions.md).
+
+[Measured results](docs/eval/production-results.md) · [Retrieval error analysis](docs/error-analysis.md).
+
+Stable production release: **HOLD**. Latest verified Phase I CI and local production smoke passed; no public deployment is verified. Answer-level runner exists but real answer results remain unmeasured.
 
 ## نبذة بالعربية
 
-DocuAsk تطبيق للإجابة عن الأسئلة من مستندات PDF العربية والإنجليزية مع استشهادات بالصفحات الأصلية. أظهرت التجربة الاصطناعية تحسن ترتيب النتائج باستخدام المراجع مقابل زيادة كبيرة في الزمن. لا تزال بوابة الرفض بحاجة إلى معايرة، ولا تثبت الاستشهادات وحدها صحة الإجابة. لم يُتحقق من نشر خارجي.
+DocuAsk تطبيق للإجابة عن الأسئلة من مستندات PDF العربية والإنجليزية مع استشهادات بالصفحات الأصلية. أظهرت التجربة الاصطناعية تحسن ترتيب النتائج باستخدام المراجع مقابل زيادة كبيرة في الزمن. لا تزال بوابة الرفض بحاجة إلى معايرة، ولا تثبت الاستشهادات وحدها صحة الإجابة. لم يُتحقق من نشر خارجي. للتشغيل اتبعي خطوات Quick start أعلاه، ثم افتحي الواجهة المحلية وسجلي حسابًا وارفعي ملف PDF غير حساس. [فهرس التوثيق](docs/README.md) و[القرارات](docs/decisions.md) يوضحان حدود المشروع.
 
 ## License
 

@@ -1,4 +1,4 @@
-# MVP plan (supersedes the original 26-phase implementation order)
+# Historical MVP plan (supersedes the original 26-phase implementation order)
 
 1. FastAPI repository skeleton, Docker Compose for API/PostgreSQL/Qdrant, Makefile and lint/test CI.
 2. Pydantic settings, structlog, `.env.example` and MIT license.
@@ -11,4 +11,4 @@
 
 Then: React upload/chat/source UI; evaluation dataset and hit@k/MRR; sparse/RRF; reranking; OCR; refresh tokens; Redis queue; cache; metrics; PDF highlighting; deployment.
 
-The original docs remain design references, not claims about implemented functionality. No benchmark numbers have been measured.
+The original docs remain design references, not claims about implemented functionality. At the time of this plan no benchmark numbers had been measured. See [current evidence](eval/production-results.md) and [decisions](decisions.md).

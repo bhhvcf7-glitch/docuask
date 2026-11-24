@@ -8,8 +8,7 @@ PostgreSQL and Qdrant are real CI services. The embedding model and LLM are repl
 deterministic test implementations; no external model inference occurs. The test also verifies
 that a second user cannot read the first user's document or retrieve its passages.
 
-GitHub Actions validates Docker Compose configuration but does not build or start
-the complete ML-heavy Compose stack. That remains a separate local smoke test.
+Standard CI validates Compose configuration. Separate workflows build production containers and measure real-model retrieval.
 
 ## Full local Docker smoke test
 
@@ -34,8 +33,7 @@ if the provider refuses to cite, if indexing breaks, or if the model is not
 running. The test account remains in the development database.
 
 The first run may download multilingual-e5 model weights and build a large
-PyTorch image. Model inference, OCR quality, citation faithfulness and latency
-have not been measured by CI.
+PyTorch image. Real retrieval latency is recorded in the evaluation report. Answer faithfulness and OCR accuracy are not established.
 
 ## React frontend
 
@@ -43,7 +41,7 @@ From a second terminal:
 
 ```powershell
 cd frontend
-npm install
+npm ci
 npm run dev
 ```
 
@@ -52,9 +50,7 @@ Open `http://127.0.0.1:5173`. Vite proxies API requests to
 registration/login, authenticated PDF upload and status polling, SSE chat,
 abort, and sources with document names and page numbers.
 
-The JWT stays in browser memory and is cleared on refresh, rather than
-being persisted in localStorage. This is a minimal development UI without
-refresh tokens or hosted deployment. Uploads and search remain restricted
+Access and rotating refresh tokens stay in browser memory. Reloading requires login again. No hosted deployment is verified. Uploads and search remain restricted
 to authenticated users.
 
 Run frontend checks:
@@ -65,4 +61,4 @@ npm test
 ```
 
 For development, no CORS change is needed: API calls use Vite's same-origin
-proxy. A production reverse proxy and deployment configuration are future work.
+proxy. Production uses Caddy; see deployment.md.

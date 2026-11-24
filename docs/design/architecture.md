@@ -1,4 +1,4 @@
-> Design reference, not an implementation checklist. Implemented today: FastAPI, PostgreSQL, Qdrant dense retrieval, JWT auth, PDF ingestion, SSE QA and minimal React UI. Not implemented: Redis/ARQ, OCR, sparse vectors, reranking, refresh tokens, chat history, PDF highlights or production deployment.
+> Historical design reference, including proposed components. See README for implemented capabilities.
 
 # Architecture and boundaries
 

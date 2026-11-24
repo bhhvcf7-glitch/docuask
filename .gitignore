@@ -15,3 +15,6 @@ coverage/
 storage/
 eval/corpus/pdfs/
 docs/eval/results*.json
+
+docs/extraction/comparison.local.json
+docs/extraction/comparison.local.md

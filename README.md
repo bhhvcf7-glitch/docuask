@@ -9,7 +9,7 @@ Bilingual PDF question answering with citations. **MVP phase 8 and a minimal Rea
 | FastAPI, PostgreSQL, Qdrant, Docker Compose | Implemented; local full-stack smoke test still required |
 | Argon2 login and JWT access | Implemented; casefolded email uniqueness enforced by migration |
 | Authenticated PDF upload, SHA-256 deduplication | Implemented; failed documents can retry, owner can delete |
-| PDF text extraction, Arabic normalization, page-numbered chunks | Implemented; Arabic PDF extraction diagnostics and conservative rejection of high-confidence corruption added in V2 phase 4 |
+| PDF text extraction, Arabic normalization, page-numbered chunks | Implemented; optional four-extractor comparison added, no fallback adopted |
 | Multilingual-e5-small dense indexing and owner-scoped retrieval | Implemented; semantic quality not yet benchmarked |
 | OpenAI-compatible / Ollama LLM providers | Implemented; external model inference not exercised in CI |
 | SSE grounded QA, numbered citations mapped to retrieved chunk IDs | Implemented; provider and streaming behavior covered by mocks |
@@ -20,7 +20,7 @@ Bilingual PDF question answering with citations. **MVP phase 8 and a minimal Rea
 | Reproducible dense retrieval evaluation | Implemented; 6 original CC0 PDFs, 36 pages, 72 answerable and 12 unanswerable questions; model metrics unmeasured |
 | Hit@k / MRR and latency benchmarks | Script ready; measurements pending local run |
 
-[Architecture design](docs/design/architecture.md) · [MVP plan](docs/mvp-plan.md) · [Arabic PDF extraction](docs/arabic-extraction.md) · [Historical roadmap](docs/design/roadmap.md)
+[Architecture design](docs/design/architecture.md) · [MVP plan](docs/mvp-plan.md) · [Arabic PDF extraction](docs/arabic-extraction.md) · [Extractor comparison](docs/extraction/comparison.md) · [Historical roadmap](docs/design/roadmap.md)
 
 ## Run on Windows
 
@@ -117,6 +117,17 @@ The public [evaluation corpus and runner](eval/README.md) contain six reproducib
 | Retrieval latency p50 / p95 | Not measured |
 
 To run the real model evaluation: `python -m pip install -e './backend[dev,embeddings]'` and `python -m eval.run --output docs/eval/results.local.json`. The resulting JSON contains per-query rankings, similarity scores and timing measurements. Review those results before adjusting `QA_MIN_SCORE` or the chunk size. See [evaluation details](docs/eval/README.md).
+
+## Arabic PDF extractor comparison
+
+Run `python -m pip install -e './backend[dev,extractor-comparison]'` and
+`python scripts/compare_arabic_extractors.py` to compare pdfplumber,
+pypdfium2, PyMuPDF and pypdf on the three upstream Arabic PDF fixtures.
+The script saves raw text samples, inspector warnings and first-page reference
+phrase checks as JSON and Markdown; no production extractor fallback is enabled.
+PyMuPDF is AGPL-3.0 or commercially licensed and is **not** installed by
+default. Read [the comparison method and licensing notes](docs/extraction/comparison.md)
+before adopting any extractor.
 
 ## License
 

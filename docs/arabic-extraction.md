@@ -32,6 +32,16 @@ forms and visually ordered words. All three trigger the conservative reversed-
 word detector and are rejected rather than embedded as potentially misleading
 source text. This is not proof that every page of every Arabic PDF is broken.
 
+## Extractor comparison
+
+The separate [four-extractor comparison](extraction/comparison.md) measures
+raw output from pdfplumber, pypdfium2, PyMuPDF and pypdf on the same three
+fixtures. It retains text samples and inspector decisions; it does not
+interpret a passing heuristic as proof of correct Arabic reading order.
+The production extraction chain has not changed. The comparison tool is
+optional, and PyMuPDF must not be added to the default runtime without a
+separate license decision.
+
 ## Detection and behavior
 
 `app.ingestion.quality.inspect_arabic` returns issue codes:

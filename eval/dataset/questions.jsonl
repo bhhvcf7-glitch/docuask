@@ -1,48 +1,84 @@
-{"id":"ar_library_01","language":"ar","question":"في أي حي افتتح الفرع الرئيسي لمكتبة السحاب؟","answer":"حي الربيع","expected_document":"ar_library.pdf","expected_page":1,"answerable":true}
-{"id":"ar_library_02","language":"ar","question":"كم كتابا ورقيا كان في المكتبة عند افتتاحها؟","answer":"4200 كتاب","expected_document":"ar_library.pdf","expected_page":1,"answerable":true}
-{"id":"ar_library_03","language":"ar","question":"متى تبدأ ساعات العمل في مكتبة السحاب؟","answer":"الثامنة صباحا","expected_document":"ar_library.pdf","expected_page":1,"answerable":true}
-{"id":"ar_library_04","language":"ar","question":"كم تستمر إعارة الكتب؟","answer":"14 يوما","expected_document":"ar_library.pdf","expected_page":1,"answerable":true}
-{"id":"ar_library_05","language":"ar","question":"من هي مديرة المكتبة؟","answer":"نورة السالم","expected_document":"ar_library.pdf","expected_page":1,"answerable":true}
-{"id":"ar_library_06","language":"ar","question":"ما اسم القاعة المخصصة للقراءة الهادئة؟","answer":"قاعة النخيل","expected_document":"ar_library.pdf","expected_page":2,"answerable":true}
-{"id":"ar_library_07","language":"ar","question":"كم عدد أعضاء نادي القراءة؟","answer":"35 عضوا","expected_document":"ar_library.pdf","expected_page":2,"answerable":true}
-{"id":"ar_library_08","language":"ar","question":"في أي يوم تقام ورشة الكتابة الأسبوعية؟","answer":"الثلاثاء","expected_document":"ar_library.pdf","expected_page":2,"answerable":true}
-{"id":"ar_library_09","language":"ar","question":"في أي شهر تستقبل المكتبة الكتب المتبرع بها؟","answer":"مارس","expected_document":"ar_library.pdf","expected_page":2,"answerable":true}
-{"id":"ar_library_10","language":"ar","question":"كم حاسوبا يتوفر في الفرع؟","answer":"12 جهاز حاسوب","expected_document":"ar_library.pdf","expected_page":2,"answerable":true}
-{"id":"ar_water_01","language":"ar","question":"أين توجد محطة وادي المطر؟","answer":"منطقة الصفاء","expected_document":"ar_water.pdf","expected_page":1,"answerable":true}
-{"id":"ar_water_02","language":"ar","question":"ما سعة خزان محطة وادي المطر؟","answer":"1800 متر مكعب","expected_document":"ar_water.pdf","expected_page":1,"answerable":true}
-{"id":"ar_water_03","language":"ar","question":"كم مضخة رئيسية تستخدم المحطة؟","answer":"ثلاثة مضخات","expected_document":"ar_water.pdf","expected_page":1,"answerable":true}
-{"id":"ar_water_04","language":"ar","question":"ما وقت بدء جولة التفتيش اليومية؟","answer":"السابعة صباحا","expected_document":"ar_water.pdf","expected_page":1,"answerable":true}
-{"id":"ar_water_05","language":"ar","question":"من المسؤول عن فريق التشغيل؟","answer":"مازن حمد","expected_document":"ar_water.pdf","expected_page":1,"answerable":true}
-{"id":"ar_water_06","language":"ar","question":"كم مرة تفحص المحطة جودة المياه يوميا؟","answer":"مرتين يوميا","expected_document":"ar_water.pdf","expected_page":2,"answerable":true}
-{"id":"ar_water_07","language":"ar","question":"متى أضيف نظام التنبيه الآلي؟","answer":"فبراير","expected_document":"ar_water.pdf","expected_page":2,"answerable":true}
-{"id":"ar_water_08","language":"ar","question":"كم يوما تستغرق الصيانة الدورية؟","answer":"خمسة أيام","expected_document":"ar_water.pdf","expected_page":2,"answerable":true}
-{"id":"ar_water_09","language":"ar","question":"كم فنيا يعمل ضمن فريق الصيانة؟","answer":"ثمانية فنيين","expected_document":"ar_water.pdf","expected_page":2,"answerable":true}
-{"id":"ar_water_10","language":"ar","question":"ما رقم خط البلاغات عن الأعطال؟","answer":"144","expected_document":"ar_water.pdf","expected_page":2,"answerable":true}
-{"id":"en_transit_01","language":"en","question":"When did the Northbridge bus pilot start?","answer":"April 2024","expected_document":"en_transit.pdf","expected_page":1,"answerable":true}
-{"id":"en_transit_02","language":"en","question":"Which two locations does Route C connect?","answer":"Cedar Park to Riverside Station","expected_document":"en_transit.pdf","expected_page":1,"answerable":true}
-{"id":"en_transit_03","language":"en","question":"How many electric buses are in the pilot?","answer":"twelve","expected_document":"en_transit.pdf","expected_page":1,"answerable":true}
-{"id":"en_transit_04","language":"en","question":"What is the earliest weekday departure time?","answer":"6:15 a.m.","expected_document":"en_transit.pdf","expected_page":1,"answerable":true}
-{"id":"en_transit_05","language":"en","question":"How much is a standard one-way ticket?","answer":"three dollars","expected_document":"en_transit.pdf","expected_page":1,"answerable":true}
-{"id":"en_transit_06","language":"en","question":"How many passengers answered the survey?","answer":"640","expected_document":"en_transit.pdf","expected_page":2,"answerable":true}
-{"id":"en_transit_07","language":"en","question":"How long does a typical charging session take?","answer":"forty minutes","expected_document":"en_transit.pdf","expected_page":2,"answerable":true}
-{"id":"en_transit_08","language":"en","question":"How many stations are on Route C?","answer":"nine","expected_document":"en_transit.pdf","expected_page":2,"answerable":true}
-{"id":"en_transit_09","language":"en","question":"Who manages the transit pilot?","answer":"Elena Torres","expected_document":"en_transit.pdf","expected_page":2,"answerable":true}
-{"id":"en_transit_10","language":"en","question":"In which month is the next fleet inspection?","answer":"November 2024","expected_document":"en_transit.pdf","expected_page":2,"answerable":true}
-{"id":"en_garden_01","language":"en","question":"When was the Brookfield garden opened?","answer":"September 2023","expected_document":"en_garden.pdf","expected_page":1,"answerable":true}
-{"id":"en_garden_02","language":"en","question":"How many raised beds does the garden have?","answer":"twenty-four","expected_document":"en_garden.pdf","expected_page":1,"answerable":true}
-{"id":"en_garden_03","language":"en","question":"When do the garden volunteers meet?","answer":"Saturday morning","expected_document":"en_garden.pdf","expected_page":1,"answerable":true}
-{"id":"en_garden_04","language":"en","question":"Where can visitors find the seed library?","answer":"east shed","expected_document":"en_garden.pdf","expected_page":1,"answerable":true}
-{"id":"en_garden_05","language":"en","question":"Who coordinates the community garden?","answer":"Daniel Okafor","expected_document":"en_garden.pdf","expected_page":1,"answerable":true}
-{"id":"en_garden_06","language":"en","question":"How much water does the garden tank hold?","answer":"900 liters","expected_document":"en_garden.pdf","expected_page":2,"answerable":true}
-{"id":"en_garden_07","language":"en","question":"When did the compost program begin?","answer":"January 2024","expected_document":"en_garden.pdf","expected_page":2,"answerable":true}
-{"id":"en_garden_08","language":"en","question":"How many schools take part in the project?","answer":"Seven","expected_document":"en_garden.pdf","expected_page":2,"answerable":true}
-{"id":"en_garden_09","language":"en","question":"What month hosts the harvest festival?","answer":"October","expected_document":"en_garden.pdf","expected_page":2,"answerable":true}
-{"id":"en_garden_10","language":"en","question":"At what time does the tool lending desk close?","answer":"5 p.m.","expected_document":"en_garden.pdf","expected_page":2,"answerable":true}
-{"id":"unanswerable_01","language":"ar","question":"كم يبلغ راتب مديرة مكتبة السحاب؟","answer":null,"expected_document":null,"expected_page":null,"answerable":false}
-{"id":"unanswerable_02","language":"ar","question":"ما لون الجدران في مكتبة السحاب؟","answer":null,"expected_document":null,"expected_page":null,"answerable":false}
-{"id":"unanswerable_03","language":"ar","question":"كم تكلفة بناء محطة وادي المطر؟","answer":null,"expected_document":null,"expected_page":null,"answerable":false}
-{"id":"unanswerable_04","language":"ar","question":"متى تأسست شركة مضخات المحطة؟","answer":null,"expected_document":null,"expected_page":null,"answerable":false}
-{"id":"unanswerable_05","language":"en","question":"What is the Northbridge driver's annual salary?","answer":null,"expected_document":null,"expected_page":null,"answerable":false}
-{"id":"unanswerable_06","language":"en","question":"Who designed the battery chemistry for the transit buses?","answer":null,"expected_document":null,"expected_page":null,"answerable":false}
-{"id":"unanswerable_07","language":"en","question":"What is the Brookfield garden's annual insurance premium?","answer":null,"expected_document":null,"expected_page":null,"answerable":false}
-{"id":"unanswerable_08","language":"en","question":"How many visitors attended the garden in December 2025?","answer":null,"expected_document":null,"expected_page":null,"answerable":false}
+{"id":"ar_library_01","language":"ar","question":"كم تبلغ رسوم العضوية السنوية لمكتبة السحاب؟","answer":"85 ريالا","expected_document":"ar_library.pdf","expected_page":1,"answerable":true}
+{"id":"ar_library_02","language":"ar","question":"من أشرف على فهرسة مجموعة التراث في مكتبة السحاب؟","answer":"فاطمة العتيبي","expected_document":"ar_library.pdf","expected_page":1,"answerable":true}
+{"id":"ar_library_03","language":"ar","question":"كم كتابا خصصت مكتبة السحاب لقسم العلوم؟","answer":"620 كتابا","expected_document":"ar_library.pdf","expected_page":2,"answerable":true}
+{"id":"ar_library_04","language":"ar","question":"في أي يوم تفتح قاعة المخطوطات بمكتبة السحاب؟","answer":"الاثنين","expected_document":"ar_library.pdf","expected_page":2,"answerable":true}
+{"id":"ar_library_05","language":"ar","question":"كم مقعدا يستوعب مسرح القراءة بمكتبة السحاب؟","answer":"74 مقعدا","expected_document":"ar_library.pdf","expected_page":3,"answerable":true}
+{"id":"ar_library_06","language":"ar","question":"متى بدأت خدمة توصيل الكتب في مكتبة السحاب؟","answer":"شهر مايو","expected_document":"ar_library.pdf","expected_page":3,"answerable":true}
+{"id":"ar_library_07","language":"ar","question":"ما متوسط زيارات مكتبة السحاب اليومية؟","answer":"190 زيارة","expected_document":"ar_library.pdf","expected_page":4,"answerable":true}
+{"id":"ar_library_08","language":"ar","question":"كم ملفا يحفظ أرشيف مكتبة السحاب الرقمي؟","answer":"3600 ملف","expected_document":"ar_library.pdf","expected_page":4,"answerable":true}
+{"id":"ar_library_09","language":"ar","question":"ما مدة إعارة الكتب للباحثين بمكتبة السحاب؟","answer":"21 يوما","expected_document":"ar_library.pdf","expected_page":5,"answerable":true}
+{"id":"ar_library_10","language":"ar","question":"في أي طابق تقع قاعة محاضرات مكتبة السحاب الجديدة؟","answer":"الطابق الثالث","expected_document":"ar_library.pdf","expected_page":5,"answerable":true}
+{"id":"ar_library_11","language":"ar","question":"في أي شهر يقام معرض الكتب المصورة بمكتبة السحاب؟","answer":"شهر سبتمبر","expected_document":"ar_library.pdf","expected_page":6,"answerable":true}
+{"id":"ar_library_12","language":"ar","question":"من تقود فريق الأنشطة الصيفية في مكتبة السحاب؟","answer":"مريم الحربي","expected_document":"ar_library.pdf","expected_page":6,"answerable":true}
+{"id":"unanswerable_ar_library_1","language":"ar","question":"كم تبلغ قيمة التأمين السنوي لمكتبة السحاب؟","answer":null,"expected_document":null,"expected_page":null,"answerable":false}
+{"id":"unanswerable_ar_library_2","language":"ar","question":"ما اسم الشركة التي صنعت رفوف مكتبة السحاب؟","answer":null,"expected_document":null,"expected_page":null,"answerable":false}
+{"id":"ar_library_east_01","language":"ar","question":"كم تبلغ رسوم العضوية السنوية لمكتبة الشرق؟","answer":"65 ريالا","expected_document":"ar_library_east.pdf","expected_page":1,"answerable":true}
+{"id":"ar_library_east_02","language":"ar","question":"من أشرف على فهرسة مجموعة التراث في مكتبة الشرق؟","answer":"خالد القحطاني","expected_document":"ar_library_east.pdf","expected_page":1,"answerable":true}
+{"id":"ar_library_east_03","language":"ar","question":"كم كتابا خصصت مكتبة الشرق لقسم العلوم؟","answer":"540 كتابا","expected_document":"ar_library_east.pdf","expected_page":2,"answerable":true}
+{"id":"ar_library_east_04","language":"ar","question":"في أي يوم تفتح قاعة المخطوطات بمكتبة الشرق؟","answer":"الخميس","expected_document":"ar_library_east.pdf","expected_page":2,"answerable":true}
+{"id":"ar_library_east_05","language":"ar","question":"كم مقعدا يستوعب مسرح القراءة بمكتبة الشرق؟","answer":"68 مقعدا","expected_document":"ar_library_east.pdf","expected_page":3,"answerable":true}
+{"id":"ar_library_east_06","language":"ar","question":"متى بدأت خدمة توصيل الكتب في مكتبة الشرق؟","answer":"شهر يونيو","expected_document":"ar_library_east.pdf","expected_page":3,"answerable":true}
+{"id":"ar_library_east_07","language":"ar","question":"ما متوسط زيارات مكتبة الشرق اليومية؟","answer":"155 زيارة","expected_document":"ar_library_east.pdf","expected_page":4,"answerable":true}
+{"id":"ar_library_east_08","language":"ar","question":"كم ملفا يحفظ أرشيف مكتبة الشرق الرقمي؟","answer":"2900 ملف","expected_document":"ar_library_east.pdf","expected_page":4,"answerable":true}
+{"id":"ar_library_east_09","language":"ar","question":"ما مدة إعارة الكتب للباحثين بمكتبة الشرق؟","answer":"18 يوما","expected_document":"ar_library_east.pdf","expected_page":5,"answerable":true}
+{"id":"ar_library_east_10","language":"ar","question":"في أي طابق تقع قاعة محاضرات مكتبة الشرق الجديدة؟","answer":"الطابق الثاني","expected_document":"ar_library_east.pdf","expected_page":5,"answerable":true}
+{"id":"ar_library_east_11","language":"ar","question":"في أي شهر يقام معرض الكتب المصورة بمكتبة الشرق؟","answer":"شهر أكتوبر","expected_document":"ar_library_east.pdf","expected_page":6,"answerable":true}
+{"id":"ar_library_east_12","language":"ar","question":"من يقود فريق الأنشطة الصيفية في مكتبة الشرق؟","answer":"أحمد الغامدي","expected_document":"ar_library_east.pdf","expected_page":6,"answerable":true}
+{"id":"unanswerable_ar_library_east_1","language":"ar","question":"من هو ممول مبنى مكتبة الشرق؟","answer":null,"expected_document":null,"expected_page":null,"answerable":false}
+{"id":"unanswerable_ar_library_east_2","language":"ar","question":"كم استهلكت مكتبة الشرق من الكهرباء العام الماضي؟","answer":null,"expected_document":null,"expected_page":null,"answerable":false}
+{"id":"ar_water_01","language":"ar","question":"ما سعة الخزان الرئيسي في محطة وادي المطر؟","answer":"1850 مترا مكعبا","expected_document":"ar_water.pdf","expected_page":1,"answerable":true}
+{"id":"ar_water_02","language":"ar","question":"كم مضخة كهربائية تعمل في محطة وادي المطر؟","answer":"أربع مضخات","expected_document":"ar_water.pdf","expected_page":1,"answerable":true}
+{"id":"ar_water_03","language":"ar","question":"كم مرة زمنية تفصل بين قياسات جودة المياه؟","answer":"ست ساعات","expected_document":"ar_water.pdf","expected_page":2,"answerable":true}
+{"id":"ar_water_04","language":"ar","question":"من يقود فريق تشغيل محطة وادي المطر؟","answer":"يوسف حمد","expected_document":"ar_water.pdf","expected_page":2,"answerable":true}
+{"id":"ar_water_05","language":"ar","question":"ما طول خط التوزيع الشرقي للمحطة؟","answer":"13 كيلومترا","expected_document":"ar_water.pdf","expected_page":3,"answerable":true}
+{"id":"ar_water_06","language":"ar","question":"في أي يوم يبدأ فحص خزانات محطة وادي المطر الأسبوعي؟","answer":"الثلاثاء","expected_document":"ar_water.pdf","expected_page":3,"answerable":true}
+{"id":"ar_water_07","language":"ar","question":"ما الاستهلاك اليومي المسجل في محطة وادي المطر؟","answer":"720 مترا مكعبا","expected_document":"ar_water.pdf","expected_page":4,"answerable":true}
+{"id":"ar_water_08","language":"ar","question":"متى أضيف حساس الضغط الجديد في المحطة؟","answer":"شهر مارس","expected_document":"ar_water.pdf","expected_page":4,"answerable":true}
+{"id":"ar_water_09","language":"ar","question":"كم فنيا يعمل في فريق طوارئ محطة وادي المطر؟","answer":"تسعة فنيين","expected_document":"ar_water.pdf","expected_page":5,"answerable":true}
+{"id":"ar_water_10","language":"ar","question":"ما مدة الإغلاق في خطة صيانة محطة وادي المطر؟","answer":"ثلاث ساعات","expected_document":"ar_water.pdf","expected_page":5,"answerable":true}
+{"id":"ar_water_11","language":"ar","question":"أين تقع غرفة المراقبة في محطة وادي المطر؟","answer":"المبنى الجنوبي","expected_document":"ar_water.pdf","expected_page":6,"answerable":true}
+{"id":"ar_water_12","language":"ar","question":"ما رقم بلاغات الأعطال في محطة وادي المطر؟","answer":"177","expected_document":"ar_water.pdf","expected_page":6,"answerable":true}
+{"id":"unanswerable_ar_water_1","language":"ar","question":"ما تكلفة تصميم محطة وادي المطر؟","answer":null,"expected_document":null,"expected_page":null,"answerable":false}
+{"id":"unanswerable_ar_water_2","language":"ar","question":"من هي الشركة المصنعة للأنابيب في محطة وادي المطر؟","answer":null,"expected_document":null,"expected_page":null,"answerable":false}
+{"id":"en_transit_01","language":"en","question":"How many electric buses does the Northbridge trial operate?","answer":"seventeen electric buses","expected_document":"en_transit.pdf","expected_page":1,"answerable":true}
+{"id":"en_transit_02","language":"en","question":"Which stations does Northbridge Route C connect?","answer":"Cedar Square and Harbor Terminal","expected_document":"en_transit.pdf","expected_page":1,"answerable":true}
+{"id":"en_transit_03","language":"en","question":"What is the first Northbridge weekday departure time?","answer":"6:25 a.m.","expected_document":"en_transit.pdf","expected_page":2,"answerable":true}
+{"id":"en_transit_04","language":"en","question":"What does a regular Northbridge single ticket cost?","answer":"four dollars","expected_document":"en_transit.pdf","expected_page":2,"answerable":true}
+{"id":"en_transit_05","language":"en","question":"How many passenger survey forms were completed at Northbridge?","answer":"720 completed forms","expected_document":"en_transit.pdf","expected_page":3,"answerable":true}
+{"id":"en_transit_06","language":"en","question":"What is the average Northbridge charging session duration?","answer":"47 minutes","expected_document":"en_transit.pdf","expected_page":3,"answerable":true}
+{"id":"en_transit_07","language":"en","question":"How many stops are listed on the Northbridge schedule?","answer":"eleven route stops","expected_document":"en_transit.pdf","expected_page":4,"answerable":true}
+{"id":"en_transit_08","language":"en","question":"Who manages the Northbridge safety program?","answer":"Rita Gomez","expected_document":"en_transit.pdf","expected_page":4,"answerable":true}
+{"id":"en_transit_09","language":"en","question":"In which month is the Northbridge fleet inspection?","answer":"June","expected_document":"en_transit.pdf","expected_page":5,"answerable":true}
+{"id":"en_transit_10","language":"en","question":"Where is the Northbridge maintenance depot?","answer":"Alder Road","expected_document":"en_transit.pdf","expected_page":5,"answerable":true}
+{"id":"en_transit_11","language":"en","question":"What is the Northbridge peak service interval?","answer":"nine minutes","expected_document":"en_transit.pdf","expected_page":6,"answerable":true}
+{"id":"en_transit_12","language":"en","question":"What amount is included in the Northbridge pilot budget?","answer":"260000 dollars","expected_document":"en_transit.pdf","expected_page":6,"answerable":true}
+{"id":"unanswerable_en_transit_1","language":"en","question":"What battery chemistry does Northbridge use?","answer":null,"expected_document":null,"expected_page":null,"answerable":false}
+{"id":"unanswerable_en_transit_2","language":"en","question":"Who owns the land under Northbridge's maintenance depot?","answer":null,"expected_document":null,"expected_page":null,"answerable":false}
+{"id":"en_transit_west_01","language":"en","question":"How many electric buses does the Westhaven trial operate?","answer":"fourteen electric buses","expected_document":"en_transit_west.pdf","expected_page":1,"answerable":true}
+{"id":"en_transit_west_02","language":"en","question":"Which stations does Westhaven Route C connect?","answer":"Willow Square and Lake Terminal","expected_document":"en_transit_west.pdf","expected_page":1,"answerable":true}
+{"id":"en_transit_west_03","language":"en","question":"What is the first Westhaven weekday departure time?","answer":"6:45 a.m.","expected_document":"en_transit_west.pdf","expected_page":2,"answerable":true}
+{"id":"en_transit_west_04","language":"en","question":"What does a regular Westhaven single ticket cost?","answer":"five dollars","expected_document":"en_transit_west.pdf","expected_page":2,"answerable":true}
+{"id":"en_transit_west_05","language":"en","question":"How many passenger survey forms were completed at Westhaven?","answer":"680 completed forms","expected_document":"en_transit_west.pdf","expected_page":3,"answerable":true}
+{"id":"en_transit_west_06","language":"en","question":"What is the average Westhaven charging session duration?","answer":"52 minutes","expected_document":"en_transit_west.pdf","expected_page":3,"answerable":true}
+{"id":"en_transit_west_07","language":"en","question":"How many stops are listed on the Westhaven schedule?","answer":"eight route stops","expected_document":"en_transit_west.pdf","expected_page":4,"answerable":true}
+{"id":"en_transit_west_08","language":"en","question":"Who manages the Westhaven safety program?","answer":"Amelia Ross","expected_document":"en_transit_west.pdf","expected_page":4,"answerable":true}
+{"id":"en_transit_west_09","language":"en","question":"In which month is the Westhaven fleet inspection?","answer":"July","expected_document":"en_transit_west.pdf","expected_page":5,"answerable":true}
+{"id":"en_transit_west_10","language":"en","question":"Where is the Westhaven maintenance depot?","answer":"Birch Road","expected_document":"en_transit_west.pdf","expected_page":5,"answerable":true}
+{"id":"en_transit_west_11","language":"en","question":"What is the Westhaven peak service interval?","answer":"twelve minutes","expected_document":"en_transit_west.pdf","expected_page":6,"answerable":true}
+{"id":"en_transit_west_12","language":"en","question":"What amount is included in the Westhaven pilot budget?","answer":"310000 dollars","expected_document":"en_transit_west.pdf","expected_page":6,"answerable":true}
+{"id":"unanswerable_en_transit_west_1","language":"en","question":"Which insurance company covers the Westhaven bus fleet?","answer":null,"expected_document":null,"expected_page":null,"answerable":false}
+{"id":"unanswerable_en_transit_west_2","language":"en","question":"What is the annual salary of Westhaven's drivers?","answer":null,"expected_document":null,"expected_page":null,"answerable":false}
+{"id":"en_garden_01","language":"en","question":"How many raised beds are at the Brookfield garden?","answer":"thirty-one raised beds","expected_document":"en_garden.pdf","expected_page":1,"answerable":true}
+{"id":"en_garden_02","language":"en","question":"When do Brookfield garden volunteers gather?","answer":"Thursday evening","expected_document":"en_garden.pdf","expected_page":1,"answerable":true}
+{"id":"en_garden_03","language":"en","question":"Where is the Brookfield seed library stored?","answer":"north shed","expected_document":"en_garden.pdf","expected_page":2,"answerable":true}
+{"id":"en_garden_04","language":"en","question":"Who directs the Brookfield garden education program?","answer":"Daniel Okafor","expected_document":"en_garden.pdf","expected_page":2,"answerable":true}
+{"id":"en_garden_05","language":"en","question":"How much does the Brookfield rainwater tank hold?","answer":"1100 liters","expected_document":"en_garden.pdf","expected_page":3,"answerable":true}
+{"id":"en_garden_06","language":"en","question":"When did Brookfield's compost program begin?","answer":"February","expected_document":"en_garden.pdf","expected_page":3,"answerable":true}
+{"id":"en_garden_07","language":"en","question":"How many schools participate in Brookfield's program?","answer":"Nine schools","expected_document":"en_garden.pdf","expected_page":4,"answerable":true}
+{"id":"en_garden_08","language":"en","question":"When does the Brookfield harvest festival occur?","answer":"September","expected_document":"en_garden.pdf","expected_page":4,"answerable":true}
+{"id":"en_garden_09","language":"en","question":"When does the Brookfield tool desk close?","answer":"4 p.m.","expected_document":"en_garden.pdf","expected_page":5,"answerable":true}
+{"id":"en_garden_10","language":"en","question":"How many watering cans does Brookfield provide?","answer":"45 reusable garden watering cans","expected_document":"en_garden.pdf","expected_page":5,"answerable":true}
+{"id":"en_garden_11","language":"en","question":"How many participants can the Brookfield training room seat?","answer":"sixty participants","expected_document":"en_garden.pdf","expected_page":6,"answerable":true}
+{"id":"en_garden_12","language":"en","question":"When was the Brookfield soil survey completed?","answer":"August","expected_document":"en_garden.pdf","expected_page":6,"answerable":true}
+{"id":"unanswerable_en_garden_1","language":"en","question":"What is the Brookfield site's property tax bill?","answer":null,"expected_document":null,"expected_page":null,"answerable":false}
+{"id":"unanswerable_en_garden_2","language":"en","question":"Which company provides Brookfield's garden insurance?","answer":null,"expected_document":null,"expected_page":null,"answerable":false}

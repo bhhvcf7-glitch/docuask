@@ -17,7 +17,7 @@ Bilingual PDF question answering with citations. **MVP phase 8 and a minimal Rea
 | Client cancellation | Implemented with request-disconnect polling and async stream cleanup |
 | Minimal React UI | Implemented; CI TypeScript build and SSE parser tests |
 | Deployment | Not implemented |
-| Reproducible dense retrieval evaluation | Implemented; 4 synthetic public PDFs, 40 answerable and 8 unanswerable questions; no real model scores measured |
+| Reproducible dense retrieval evaluation | Implemented; 6 original CC0 PDFs, 36 pages, 72 answerable and 12 unanswerable questions; model metrics unmeasured |
 | Hit@k / MRR and latency benchmarks | Script ready; measurements pending local run |
 
 [Architecture design](docs/design/architecture.md) · [MVP plan](docs/mvp-plan.md) · [Arabic PDF extraction](docs/arabic-extraction.md) · [Historical roadmap](docs/design/roadmap.md)
@@ -106,12 +106,13 @@ Three public Arabic PDF fixtures from jsPDF, PDF.js and Tabula are checked into 
 
 ## V2 Phase 5: retrieval evaluation
 
-The public [evaluation corpus and runner](eval/README.md) contain four reproducible, **synthetic** PDF documents (two Arabic, two English), 40 answerable questions labeled with correct document and page, and eight unanswerable questions. This is a controlled baseline, **not** a representative set of independently published Arabic PDFs. GitHub Actions validates generated PDF text and labels and publishes the four PDFs as a build artifact, without running model inference. Actual dense retrieval measurements require a local CPU run. The script uses the existing pdfplumber, chunker, multilingual-e5-small and Qdrant vector indexing code, with local in-memory Qdrant. LLM answer quality is not measured; the refusal metric measures only the retrieval similarity gate.
+The public [evaluation corpus and runner](eval/README.md) contain six reproducible, **synthetic** PDF documents (three Arabic, three English, 36 pages), 72 answerable questions labeled with correct document and page, and 12 unanswerable questions. This is a controlled baseline, **not** a representative set of independently published Arabic PDFs. GitHub Actions validates generated PDF text and labels and publishes the six PDFs as a build artifact, without running model inference. Actual dense retrieval measurements require a local CPU run. The script uses the existing pdfplumber, chunker, multilingual-e5-small and Qdrant vector indexing code, with local in-memory Qdrant. LLM answer quality is not measured; the refusal metric measures only the retrieval similarity gate.
 
 | Metric | multilingual-e5-small (dense retrieval) |
 | --- | --- |
 | hit@1 / hit@3 / hit@5 | Not measured |
 | MRR@5 | Not measured |
+| Indexed chunk count | Validated in check mode; real-model run pending |
 | Unanswerable retrieval-gate refusal accuracy | Not measured |
 | Retrieval latency p50 / p95 | Not measured |
 

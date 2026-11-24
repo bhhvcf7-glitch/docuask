@@ -24,7 +24,7 @@ def load_manifest() -> dict:
 
 
 def arabic_font(font_path: Path | None = None) -> str:
-    path = font_path or next((path for path in FONT_PATHS if path.is_file()), None)
+    path = font_path or next((item for item in FONT_PATHS if item.is_file()), None)
     if path is None or not path.is_file():
         raise FileNotFoundError(
             "An Arabic TTF font is required. Pass --font with a local Arabic font path."
@@ -36,7 +36,7 @@ def arabic_font(font_path: Path | None = None) -> str:
 
 def build_corpus(output: Path, *, font_path: Path | None = None) -> list[Path]:
     manifest = load_manifest()
-    if manifest["schema_version"] != 1:
+    if manifest["schema_version"] != 2:
         raise ValueError("Unsupported corpus manifest schema")
 
     font = arabic_font(font_path) if any(
@@ -54,16 +54,24 @@ def build_corpus(output: Path, *, font_path: Path | None = None) -> list[Path]:
         for expected, page in enumerate(doc["pages"], start=1):
             if page["number"] != expected:
                 raise ValueError(f"Non-sequential pages in {doc['id']}")
+            if len(page["lines"]) > 29:
+                raise ValueError(f"Too many lines on page {expected} in {doc['id']}")
 
             pdf.setFont(face, 15)
-            pdf.drawString(40, 782, doc["title"])
+            pdf.drawString(40, 784, doc["title"])
             pdf.setFont(face, 11)
-            pdf.drawString(40, 750, f"Page {expected}")
+            pdf.drawString(40, 755, f"Page {expected}")
+
             for index, sentence in enumerate(page["lines"]):
-                if len(sentence) > 170:
-                    raise ValueError("Evaluation line is too long")
-                pdf.setFont(face, 12)
-                pdf.drawString(40, 686 - index * 95, sentence)
+                if not sentence.strip():
+                    raise ValueError("Empty evaluation line")
+                width = pdfmetrics.stringWidth(sentence, face, 11)
+                if width > A4[0] - 80:
+                    raise ValueError(
+                        f"Text overflows page {expected} of {doc['id']}"
+                    )
+                pdf.setFont(face, 11)
+                pdf.drawString(40, 710 - index * 21, sentence)
             pdf.showPage()
 
         pdf.save()

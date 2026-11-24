@@ -9,12 +9,16 @@ from eval.run import check_corpus, load_questions
 
 def test_generated_pdf_corpus_contains_verified_answers(tmp_path: Path) -> None:
     pdfs = build_corpus(tmp_path)
-    assert len(pdfs) == 4
+    assert len(pdfs) == 6
     assert all(path.read_bytes().startswith(b"%PDF-") for path in pdfs)
     questions = load_questions()
     counts = check_corpus(tmp_path, load_manifest(), questions)
-    assert counts == {"documents": 4, "answerable": 40, "unanswerable": 8}
-    assert len({question["id"] for question in questions}) == 48
+    assert counts["documents"] == 6
+    assert counts["pages"] == 36
+    assert counts["answerable"] == 72
+    assert counts["unanswerable"] == 12
+    assert counts["chunks"] >= 72
+    assert len({question["id"] for question in questions}) == 84
 
 
 def test_dataset_rejects_answer_on_wrong_source_page(tmp_path: Path) -> None:
@@ -93,8 +97,51 @@ async def test_evaluation_uses_existing_qdrant_index_without_model_weights(
     )
 
     assert report["model"] == run.MODEL_NAME
-    assert len(report["observations"]) == 48
-    assert report["metrics"]["answerable_count"] == 40
-    assert report["metrics"]["unanswerable_count"] == 8
+    assert len(report["observations"]) == 84
+    assert report["indexed_document_count"] == 6
+    assert report["indexed_page_count"] == 36
+    assert report["indexed_chunk_count"] >= 72
+    assert sum(report["chunks_per_document"].values()) == report["indexed_chunk_count"]
+    assert report["metrics"]["answerable_count"] == 72
+    assert report["metrics"]["unanswerable_count"] == 12
     assert all(len(row["hits"]) <= 5 for row in report["observations"])
     assert all("total_ms" in row for row in report["observations"])
+
+
+def test_corpus_contains_long_pages_with_middle_of_page_answers() -> None:
+    manifest = load_manifest()
+    questions = load_questions()
+    assert {doc["language"] for doc in manifest["documents"]} == {"ar", "en"}
+    assert sum(len(doc["pages"]) for doc in manifest["documents"]) == 36
+    for doc in manifest["documents"]:
+        assert len(doc["pages"]) == 6
+        for page in doc["pages"]:
+            paragraph = " ".join(page["lines"])
+            assert len(paragraph) >= 1100
+            labeled = [
+                question for question in questions
+                if question["answerable"]
+                and question["expected_document"] == doc["filename"]
+                and question["expected_page"] == page["number"]
+            ]
+            assert len(labeled) == 2
+            positions = [
+                next(index for index, line in enumerate(page["lines"])
+                     if question["answer"] in line)
+                for question in labeled
+            ]
+            assert min(positions) >= 10
+            assert max(positions) <= len(page["lines"]) - 5
+
+
+def test_similar_topic_documents_have_distinct_correct_answers() -> None:
+    questions = load_questions()
+    by_id = {question["id"]: question for question in questions}
+    assert (
+        by_id["ar_library_01"]["answer"]
+        != by_id["ar_library_east_01"]["answer"]
+    )
+    assert (
+        by_id["en_transit_01"]["answer"]
+        != by_id["en_transit_west_01"]["answer"]
+    )

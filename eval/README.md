@@ -1,35 +1,37 @@
 # DocuAsk evaluation corpus
 
-This is an openly published **synthetic** baseline, not an independent
-real-world Arabic PDF benchmark. The four fictional, original source documents
-and their labels are released under CC0-1.0. They contain two Arabic and two
-English text-layer PDFs, two pages each. The document facts are unrelated to
-real organizations; the 48 questions are intentionally withheld from PDF text.
+The benchmark uses six original fictional text-layer PDFs, released under
+CC0-1.0. Three are Arabic and three are English. Each document has six pages,
+giving 36 pages in total. The question file contains 72 answerable questions
+(two per page, labeled with document and page) and 12 unanswerable questions.
 
-The corpus has 40 answerable questions (10 per document, 5 per page) with
-expected document, page and reference answer, plus eight unanswerable questions
-(Arabic and English). All references are checked against actual extracted PDF
-text before any model is loaded. The dataset was authored for regression
-testing; it does not establish generalization to real user PDFs.
+The paired libraries and paired transit reports intentionally repeat the same
+topics with different facts. Each page contains more than 1,100 characters of
+operational context. Labeled answers appear in the middle and later portions
+of these long pages, not only in page titles. The validator requires at least
+two chunks per page under the current DocuAsk chunker.
 
-Files:
-- `corpus/manifest.json`: original fictional document content, page by page
-- `dataset/questions.jsonl`: 40 answerable and 8 unanswerable labels
-- `build_corpus.py`: deterministic ReportLab PDF generator
-- `run.py`: Qdrant dense evaluation using DocuAsk's existing extraction,
-  chunking, embedding and vector-index implementations
-- `metrics.py`: measured ranking, retrieval gate and latency statistics
+This is a controlled **synthetic regression corpus**, not a representative
+sample of independently published PDFs. Some background text is intentionally
+repetitive. It tests retrieval ranking among distractors but cannot establish
+real-world relevance or Arabic rendering quality.
 
-PDFs are generated under `eval/corpus/pdfs/` (ignored by Git). GitHub Actions
-builds and uploads them as a downloadable artifact. A local Arabic TrueType font
-(DejaVu Sans on Linux, Arial/Tahoma on Windows) is required. The generated
-PDFs are designed for Unicode extraction, not typographic Arabic shaping.
-Real published Arabic PDF quality is handled separately in
-`docs/arabic-extraction.md`.
+## Files
+
+- `corpus/manifest.json`: original fictional reference text for every page
+- `dataset/questions.jsonl`: questions, reference answers and document/page labels
+- `build_corpus.py`: deterministic PDF generation with a local TrueType font
+- `run.py`: validation and CPU dense retrieval through the existing components
+- `metrics.py`: hit@1/3/5, MRR@5, retrieval-gate accuracy and p50/p95 latency
+
+The generated PDFs are saved under `eval/corpus/pdfs/`, ignored by Git and
+uploaded as a GitHub Actions artifact. The benchmark uses real `pdfplumber`
+extraction, `chunk_pages`, `multilingual-e5-small` and in-memory Qdrant.
+It reports the actual number of indexed chunks, including per-document counts.
 
 ## Commands
 
-From the repository root with Python 3.11:
+From the repository root on Windows:
 
 ```powershell
 py -3.11 -m pip install -e "./backend[dev,embeddings]"
@@ -37,35 +39,28 @@ py -3.11 -m eval.run --check
 py -3.11 -m eval.run --output docs/eval/results.local.json
 ```
 
-On Linux use `python -m ...` instead of `py -3.11 -m ...`. When an Arabic
-font is not detected, pass `--font "C:/Windows/Fonts/arial.ttf"` or an
-installed Arabic TrueType path.
+For a lightweight validation, install only `./backend[dev]` and run
+`--check`; this does not download model weights. On Linux use
+`python -m` instead of `py -3.11 -m`. If Arabic fonts cannot be found,
+add `--font "C:/Windows/Fonts/arial.ttf"` or an installed Arabic TTF path.
 
-The model defaults to `intfloat/multilingual-e5-small` on CPU and may
-download weights on first use. The script uses in-memory Qdrant, so PostgreSQL,
-the Qdrant service, the API, Ollama and paid LLMs are not required. It
-evaluates the real dense embedding and vector-search path, not the
-SQL/HTTP authorization layer (which already has independent integration tests).
+The full evaluation downloads `intfloat/multilingual-e5-small` if necessary
+and runs on CPU. It does not require PostgreSQL, a Qdrant server, Ollama or paid
+API credentials. The script reports indexed chunk count, hit@1, hit@3, hit@5,
+MRR@5 and latency p50/p95 for query embedding, vector search and end-to-end
+retrieval. Ranking counts a hit only when **both document and page** match.
+MRR@5 is zero if no matching page appears in the first five results.
 
-For every question the script measures query embedding, Qdrant search and
-total retrieval latency. It excludes PDF generation and initial indexing
-from per-query latency but records total indexing time separately. Latency
-p50/p95 use linear interpolation across the observed query timings. hit@1,
-hit@3, hit@5 and MRR@5 match **both document and page**. MRR@5 assigns zero
-to questions with no correct page in the top five.
+The refusal numbers measure only whether the top similarity score passes the
+existing `QA_MIN_SCORE` threshold. They do not test LLM refusal or factual
+correctness. A non-answerable question might still match a thematically similar
+passage. Indexing time is reported separately from query latency.
 
-`retrieval_gate_refusal_accuracy` reports the fraction of unanswerable
-questions whose best similarity score is below the configured QA threshold.
-`retrieval_gate_answerable_recall` reports the fraction of answerable
-questions that pass the same gate. Neither is an LLM refusal rate or a
-calibrated probability of factual support. No provider is called. The
-script retains the real per-query similarity scores to support later
-threshold analysis.
+`docs/eval/results.local.json` is ignored by Git. Share that measured JSON
+before setting a new score threshold or claiming that retrieval improved.
+The CI run validates PDF text and answer labels, exercises the evaluation
+code using fake embeddings and in-memory Qdrant, and runs no real model.
 
-Results are saved as JSON in `docs/eval/results.local.json` by default.
-The results file is ignored by Git until independently reviewed. Share
-the measured JSON before choosing a new `QA_MIN_SCORE` or claiming that
-chunking, hybrid retrieval or reranking improves relevance.
-
-CI executes only `python -m eval.run --check` and lightweight deterministic
-tests. It does not download embedding weights or publish benchmark scores.
+Three independent, difficult Arabic PDF extraction fixtures remain documented
+in `docs/arabic-extraction.md`; they are intentionally not part of this
+synthetic retrieval benchmark.

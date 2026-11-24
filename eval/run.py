@@ -32,8 +32,13 @@ def load_questions() -> list[dict]:
 
 def check_corpus(pdf_dir: Path, manifest: dict, questions: list[dict]) -> dict:
     documents = manifest["documents"]
-    if len(documents) < 3 or len(documents) > 5:
-        raise ValueError("Expected three to five PDFs")
+    if len(documents) < 4 or len(documents) > 8:
+        raise ValueError("Expected four to eight PDFs")
+    if len({doc["id"] for doc in documents}) != len(documents):
+        raise ValueError("Duplicate corpus document IDs")
+    total_pages = sum(len(doc["pages"]) for doc in documents)
+    if not 30 <= total_pages <= 50:
+        raise ValueError("Expected 30 to 50 pages")
     if len({doc["filename"] for doc in documents}) != len(documents):
         raise ValueError("Duplicate corpus filenames")
     if {doc["language"] for doc in documents} != {"ar", "en"}:
@@ -44,6 +49,7 @@ def check_corpus(pdf_dir: Path, manifest: dict, questions: list[dict]) -> dict:
         raise ValueError("Duplicate evaluation questions")
 
     pages_by_file = {}
+    chunk_total = 0
     for doc in documents:
         pages = dict(extract_pages(pdf_dir / doc["filename"]))
         expected = {page["number"] for page in doc["pages"]}
@@ -56,6 +62,14 @@ def check_corpus(pdf_dir: Path, manifest: dict, questions: list[dict]) -> dict:
                     f"PDF extraction differs from reference text: {doc['filename']}, "
                     f"page {page['number']}"
                 )
+        for number, text in pages.items():
+            pieces = chunk_pages([(number, text)])
+            if len(pieces) < 2:
+                raise ValueError(
+                    f"Evaluation page has fewer than two chunks: "
+                    f"{doc['filename']}, page {number}"
+                )
+            chunk_total += len(pieces)
         pages_by_file[doc["filename"]] = pages
 
     answerable_count = 0
@@ -78,10 +92,12 @@ def check_corpus(pdf_dir: Path, manifest: dict, questions: list[dict]) -> dict:
                 "answer", "expected_document", "expected_page"
             )):
                 raise ValueError(f"Unanswerable case has an answer label: {case['id']}")
-    if answerable_count < 40 or negative_count < 6:
-        raise ValueError("Expected at least 40 answerable and 6 unanswerable questions")
-    return {"documents": len(documents), "answerable": answerable_count,
-            "unanswerable": negative_count}
+    if answerable_count < 60 or negative_count < 10:
+        raise ValueError("Expected at least 60 answerable and 10 unanswerable questions")
+    return {
+        "documents": len(documents), "pages": total_pages, "chunks": chunk_total,
+        "answerable": answerable_count, "unanswerable": negative_count,
+    }
 
 
 async def evaluate(pdf_dir: Path, manifest: dict, questions: list[dict], threshold: float) -> dict:
@@ -90,12 +106,14 @@ async def evaluate(pdf_dir: Path, manifest: dict, questions: list[dict], thresho
     client = AsyncQdrantClient(":memory:")
     index = VectorIndex(client, "docuask_evaluation", embeddings.dimension)
     chunk_locations = {}
+    chunks_per_document = {}
     try:
         await index.ensure_collection()
         indexed_at = perf_counter()
         for doc in manifest["documents"]:
             document_id = uuid5(NAMESPACE, doc["id"])
             pieces = chunk_pages(extract_pages(pdf_dir / doc["filename"]))
+            chunks_per_document[doc["filename"]] = len(pieces)
             chunks = []
             for piece in pieces:
                 chunk_id = uuid5(NAMESPACE, f"{doc['id']}:{piece.ordinal}")
@@ -137,6 +155,10 @@ async def evaluate(pdf_dir: Path, manifest: dict, questions: list[dict], thresho
             "retrieval": "dense_cosine_in_memory_qdrant",
             "qa_min_score_used": threshold,
             "corpus_type": manifest["kind"],
+            "indexed_chunk_count": len(chunk_locations),
+            "indexed_document_count": len(manifest["documents"]),
+            "indexed_page_count": sum(len(doc["pages"]) for doc in manifest["documents"]),
+            "chunks_per_document": chunks_per_document,
             "indexing_ms": round(indexing_ms, 3),
             "metrics": summarize(questions, observations, threshold),
             "observations": observations,
@@ -158,8 +180,9 @@ def main() -> None:
     manifest, questions = load_manifest(), load_questions()
     counts = check_corpus(pdf_dir, manifest, questions)
     print(
-        f"Corpus validated: {counts['documents']} PDFs, "
-        f"{counts['answerable']} answerable, {counts['unanswerable']} unanswerable"
+        f"Corpus validated: {counts['documents']} PDFs, {counts['pages']} pages, "
+        f"{counts['chunks']} chunks, {counts['answerable']} answerable, "
+        f"{counts['unanswerable']} unanswerable"
     )
     if args.check:
         return
@@ -174,6 +197,8 @@ def main() -> None:
     args.output.write_text(
         json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
+    print(f"Indexed {report['indexed_chunk_count']} chunks across "
+          f"{report['indexed_page_count']} pages")
     print(json.dumps(report["metrics"], indent=2))
     print(f"Saved measured results to {args.output}")
 

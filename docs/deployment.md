@@ -28,3 +28,66 @@ At startup, stale queued and processing documents are marked failed. A periodic 
 Production Caddy is the only trusted peer (172.30.50.2/32) on a dedicated proxy network. Caddy replaces incoming X-Forwarded-For with the direct client address. Do not expose the API port or attach untrusted workloads to that network. If the subnet conflicts with an existing network, change both the static address and trusted CIDR together. A CDN or another external proxy requires a separately reviewed trust configuration. The rate limiter is still per process; clients sharing a NAT address can share an auth bucket.
 
 The proxy network assigns dynamic addresses from 172.30.50.128/25, outside Caddy's static address, to prevent the API from taking that address before Caddy starts.
+
+## Operator runbook
+
+Use a dedicated Linux VPS, Docker Engine and Compose v2, DNS A/AAAA records that resolve to the host, and firewall rules allowing HTTPS/HTTP and restricted administrator SSH only. Size CPU, RAM and disk by measuring the model and concurrent workload; no capacity benchmark is available. Do not expose Ollama, PostgreSQL, Qdrant or API ports publicly. Use a private provider endpoint and verify provider data-handling terms before sending document passages.
+
+Clone and check out the exact reviewed commit. Set restrictive permissions before creating the environment file:
+
+```bash
+git clone https://github.com/bhhvcf7-glitch/docuask.git
+cd docuask
+git rev-parse HEAD
+umask 077
+cp .env.example .env
+chmod 600 .env
+openssl rand -hex 32
+```
+
+Generate separate secrets for the database and JWT. Edit .env, replacing all placeholders, setting DOCUASK_DOMAIN to the actual hostname and OLLAMA_URL to a reachable private endpoint (not container localhost). Keep OCR disabled in the stock image and reranking disabled until measured. Set APP_ENV=production. Do not paste secrets into issues or logs.
+
+```bash
+docker compose -f compose.production.yml config --quiet
+docker compose -f compose.production.yml up -d --build --wait --wait-timeout 600
+docker compose -f compose.production.yml ps
+```
+
+The API migrates the database on startup. Take a consistent backup before upgrades. From an independent client with public DNS and trusted CA validation:
+
+```bash
+curl --fail --show-error https://YOUR_DOMAIN/health
+curl --fail --show-error https://YOUR_DOMAIN/ready
+```
+
+Both should return {"status":"ok"}. Never use -k for public acceptance. Verify HTTP redirect, TLS certificate hostname, registration, login, upload, ready status, real QA, citation page, refresh/logout, and second-account isolation. Use synthetic documents only. Record actual commit, date, hardware and results, not secrets. A health response does not verify LLM inference.
+
+## Consistent cold backup and restore
+
+Schedule downtime; stop all application writers and Qdrant before copying data. Run the following from the repository with the same Compose project name used for deployment (the examples assume the default docuask project). Adjust the volume names only after inspecting docker volume ls and confirm available disk. Never use docker compose down -v on production.
+
+```bash
+umask 077
+mkdir -p backups
+B="$(realpath backups)/$(date -u +%Y%m%dT%H%M%SZ)"
+mkdir -m 700 "$B"
+docker compose -f compose.production.yml stop web api qdrant
+docker compose -f compose.production.yml exec -T postgres sh -c 'pg_dump -Fc -U "$POSTGRES_USER" "$POSTGRES_DB"' > "$B/postgres.dump"
+test -s "$B/postgres.dump"
+for v in uploads_data qdrant_data; do
+  docker volume inspect "docuask_$v" >/dev/null || exit 1
+  docker run --rm -v "docuask_$v:/source:ro" -v "$B:/backup" alpine:3.22 tar -czf "/backup/$v.tar.gz" -C /source . || exit 1
+done
+(cd "$B" && sha256sum postgres.dump uploads_data.tar.gz qdrant_data.tar.gz > SHA256SUMS)
+docker compose -f compose.production.yml up -d --wait --wait-timeout 600
+```
+
+Check each command for success; if a backup fails, do not declare it usable, and restart services after investigation. Encrypt backups and keep off-host copies with restricted access. Preserve the exact Git revision, image versions, configuration and secrets separately in secure storage. Caddy certificate state may also be backed up securely; model cache is reproducible subject to model revision availability. Database dumps and PDFs contain private data.
+
+Restore into a new isolated project/host with matching PostgreSQL and Qdrant versions, fresh volumes and no public traffic. Verify SHA256SUMS, restore the SQL dump using pg_restore into an empty database, and unpack each archive into its corresponding empty volume while writers are stopped. Preserve file ownership. Start the reviewed application, verify migrations, compare row/point counts, test document viewing, ownership and actual QA, then record elapsed restore time. Do not overwrite the live volumes to test restoration. Roll back application and data together if a migration is incompatible; a code rollback alone may not be safe.
+
+No backup or restore drill has been executed for a live deployment. These are operator instructions, not evidence of recovery.
+
+## Demo acceptance
+
+See [demo and final audit](demo.md) for the synthetic-data walkthrough. For a real host, keep public release on HOLD until independent TLS, backup restoration, security review and model evaluation are complete.

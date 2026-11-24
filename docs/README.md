@@ -20,3 +20,5 @@ Six primary reading paths; detailed reports and historical proposals remain acce
 - Historical proposals, not current implementation: [architecture](design/architecture.md), [data model](design/data-model.md), [roadmap](design/roadmap.md), [MVP plan](mvp-plan.md).
 
 العربية: هذه نقطة الدخول إلى ستة محاور رئيسية، مع الحفاظ على الأدلة والتقارير السابقة. المخططات التاريخية ليست وصفًا للتنفيذ الحالي.
+
+[Demo and final audit](demo.md) — walkthrough and verified release evidence.

@@ -123,7 +123,11 @@ PostgreSQL integration tests require RUN_DB_TESTS=1 and a migrated test database
 
 [Measured results](docs/eval/production-results.md) · [Retrieval error analysis](docs/error-analysis.md).
 
-Stable production release: **HOLD**. Latest verified Phase I CI and local production smoke passed; no public deployment is verified. Answer-level runner exists but real answer results remain unmeasured.
+Stable production release: **HOLD**. Verified Phase K CI (207 backend tests passed, 1 skipped) and local production smoke passed; no public deployment is verified. Answer-level runner exists but real answer results remain unmeasured.
+
+## Demo
+
+See the [demo walkthrough and release audit](docs/demo.md) and [operator runbook](docs/deployment.md). No live demo URL or recorded GIF is verified.
 
 ## نبذة بالعربية
 

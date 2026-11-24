@@ -2,7 +2,6 @@ from copy import deepcopy
 from pathlib import Path
 
 import pytest
-
 from eval.build_corpus import build_corpus, load_manifest
 from eval.metrics import percentile, summarize
 from eval.run import check_corpus, load_questions

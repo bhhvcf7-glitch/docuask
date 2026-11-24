@@ -145,3 +145,7 @@ does not include them. No general Arabic extraction accuracy gain is claimed.
 ## Optional hybrid retrieval
 
 Set `RETRIEVAL_MODE=hybrid` and apply Alembic migrations. Dense retrieval remains the default. See [hybrid retrieval design](docs/hybrid-retrieval.md).
+
+## Optional multilingual reranking
+
+Set `RERANK_ENABLED=true` with the embeddings extra installed. See [reranking and evaluation](docs/reranking.md).

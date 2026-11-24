@@ -8,6 +8,7 @@ from app.core.config import Settings
 from app.db.models import Chunk, Document
 from app.retrieval.embeddings import E5Embeddings
 from app.retrieval.fusion import reciprocal_rank_fusion
+from app.retrieval.reranker import rerank
 from app.retrieval.sparse import lexical_search
 from app.retrieval.vectors import Match, VectorIndex
 
@@ -29,7 +30,8 @@ async def search_documents(
     if embeddings is None or index is None:
         raise SearchUnavailable("Search resources are not initialized")
     hybrid = settings.retrieval_mode == "hybrid"
-    candidate_limit = min(100, limit * 4) if hybrid else limit
+    rerank_limit = max(limit, settings.rerank_candidates) if settings.rerank_enabled else limit
+    candidate_limit = min(100, rerank_limit * 4) if hybrid else rerank_limit
     vector = await embeddings.query(question)
     try:
         hits = await index.search(user_id=user_id, vector=vector, limit=candidate_limit)
@@ -49,7 +51,13 @@ async def search_documents(
             hits = [Match(chunk_id, scores[chunk_id]) for chunk_id in ranked if chunk_id in scores]
     except (ResponseHandlingException, UnexpectedResponse, OSError) as exc:
         raise SearchUnavailable from exc
-    return (await _resolve(session, user_id, hits))[:limit]
+    resolved = (await _resolve(session, user_id, hits))[:rerank_limit]
+    if settings.rerank_enabled:
+        try:
+            resolved = await rerank(question, resolved)
+        except Exception as exc:
+            raise SearchUnavailable("Reranker unavailable") from exc
+    return resolved[:limit]
 
 
 async def _resolve(session: AsyncSession, user_id: UUID, hits: list) -> list[dict]:

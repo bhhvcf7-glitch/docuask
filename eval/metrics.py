@@ -35,7 +35,7 @@ def summarize(cases: list[dict], observations: list[dict], threshold: float) -> 
     refused = 0
     for question in cases:
         matches = observed[question["id"]]["hits"][:5]
-        is_supported = bool(matches) and matches[0]["score"] >= threshold
+        is_supported = any(match["score"] >= threshold for match in matches)
         if question["answerable"]:
             if is_supported:
                 correct_gate += 1

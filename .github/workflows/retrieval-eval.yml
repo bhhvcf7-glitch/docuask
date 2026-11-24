@@ -1,0 +1,48 @@
+name: retrieval-eval
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'eval/compare.py'
+      - '.github/workflows/retrieval-eval.yml'
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: docuask
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: docuask
+        ports:
+          - 5432:5432
+        options: --health-cmd "pg_isready -U docuask -d docuask" --health-interval 5s --health-timeout 3s --health-retries 10
+      qdrant:
+        image: qdrant/qdrant:v1.12.6
+        ports:
+          - 6333:6333
+    env:
+      APP_ENV: test
+      POSTGRES_PASSWORD: ci-only-password
+      PRELOAD_EMBEDDINGS: "false"
+      OMP_NUM_THREADS: "2"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - run: pip install -e './backend[dev,embeddings]'
+      - run: python -m alembic -c backend/alembic.ini upgrade head
+      - run: python -m eval.compare --output docs/eval/compare.local.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: retrieval-comparison
+          path: docs/eval/compare.local.json
+      - run: python -m eval.compare --rerank --output docs/eval/rerank.local.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reranking-comparison
+          path: docs/eval/rerank.local.json

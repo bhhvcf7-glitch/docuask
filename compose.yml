@@ -26,6 +26,9 @@ services:
       OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      RETRIEVAL_MODE: ${RETRIEVAL_MODE:-dense}
+      RERANK_ENABLED: ${RERANK_ENABLED:-false}
+      RERANK_CANDIDATES: ${RERANK_CANDIDATES:-20}
       QA_MIN_SCORE: ${QA_MIN_SCORE:-0.45}
       QA_MAX_ANSWER_CHARS: ${QA_MAX_ANSWER_CHARS:-10000}
     extra_hosts:

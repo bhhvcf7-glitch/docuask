@@ -9,7 +9,7 @@ Bilingual PDF question answering with citations. **MVP phase 8 and a minimal Rea
 | FastAPI, PostgreSQL, Qdrant, Docker Compose | Implemented; local full-stack smoke test still required |
 | Argon2 login and JWT access | Implemented; casefolded email uniqueness enforced by migration |
 | Authenticated PDF upload, SHA-256 deduplication | Implemented; failed documents can retry, owner can delete |
-| PDF text extraction, Arabic normalization, page-numbered chunks | Implemented; optional four-extractor comparison added, no fallback adopted |
+| PDF text extraction, Arabic normalization, page-numbered chunks | Implemented; selective PDFium fallback for rejected pages, optional OCR off by default |
 | Multilingual-e5-small dense indexing and owner-scoped retrieval | Implemented; semantic quality not yet benchmarked |
 | OpenAI-compatible / Ollama LLM providers | Implemented; external model inference not exercised in CI |
 | SSE grounded QA, numbered citations mapped to retrieved chunk IDs | Implemented; provider and streaming behavior covered by mocks |
@@ -58,7 +58,7 @@ Restart the API after changing the environment. An OpenAI-compatible provider mu
 
 ### API workflow
 
-Open `http://localhost:8000/docs`. Register with `POST /auth/register`, log in with `POST /auth/login`, authorize with your Bearer token, upload a text-based PDF via `POST /documents`, and poll `GET /documents/{document_id}` until `ready`. Processing runs in an in-process FastAPI background task. Scanned PDFs have no OCR support and fail ingestion.
+Open `http://localhost:8000/docs`. Register with `POST /auth/register`, log in with `POST /auth/login`, authorize with your Bearer token, upload a text-based PDF via `POST /documents`, and poll `GET /documents/{document_id}` until `ready`. Processing runs in an in-process FastAPI background task. Scanned PDFs require optional OCR (off by default); see the extraction guide.
 
 `POST /search` accepts `{"question":"ما موضوع المستند؟","limit":5}` and returns ranked passages with source pages.
 
@@ -84,7 +84,7 @@ Integration tests need migrated PostgreSQL and `RUN_DB_TESTS=1`; Qdrant tests al
 
 ## Limitations
 
-This is a local-development MVP, not a public production service. There is no OCR, refresh token, rate limiting, durable queue, automatic rescheduling after crashes, cache, prompt-injection guarantee, PDF highlighting, or deployed frontend. Cosine similarity threshold `QA_MIN_SCORE=0.45` is an uncalibrated heuristic. On cancellation the server closes the provider stream when possible, but providers may still bill for already processed tokens. Unexpected ingestion errors mark the document failed; a startup sweep marks processing documents older than STALE_PROCESSING_MINUTES as failed. Owners can retry failed documents using POST /documents/{id}/retry or delete queued/failed/ready documents using DELETE /documents/{id}. Delete removes Qdrant points, database state and local PDF when all services are available; these resources do not share a transaction, so a partial cleanup failure may need manual repair. Do not expose the API publicly without hardening.
+This is a local-development MVP, not a public production service. There is no default OCR engine, refresh token, rate limiting, durable queue, automatic rescheduling after crashes, cache, prompt-injection guarantee, PDF highlighting, or deployed frontend. Cosine similarity threshold `QA_MIN_SCORE=0.45` is an uncalibrated heuristic. On cancellation the server closes the provider stream when possible, but providers may still bill for already processed tokens. Unexpected ingestion errors mark the document failed; a startup sweep marks processing documents older than STALE_PROCESSING_MINUTES as failed. Owners can retry failed documents using POST /documents/{id}/retry or delete queued/failed/ready documents using DELETE /documents/{id}. Delete removes Qdrant points, database state and local PDF when all services are available; these resources do not share a transaction, so a partial cleanup failure may need manual repair. Do not expose the API publicly without hardening.
 
 ## Upgrade notes
 
@@ -124,10 +124,19 @@ Run `python -m pip install -e './backend[dev,extractor-comparison]'` and
 `python scripts/compare_arabic_extractors.py` to compare pdfplumber,
 pypdfium2, PyMuPDF and pypdf on the three upstream Arabic PDF fixtures.
 The script saves raw text samples, inspector warnings and first-page reference
-phrase checks as JSON and Markdown; no production extractor fallback is enabled.
+phrase checks as JSON and Markdown. Production uses pdfplumber first and a
+pypdfium2 fallback only for pages the inspector rejects or cannot extract.
 PyMuPDF is AGPL-3.0 or commercially licensed and is **not** installed by
 default. Read [the comparison method and licensing notes](docs/extraction/comparison.md)
 before adopting any extractor.
+
+## Arabic extraction fallback and OCR
+
+The [Arabic extraction guide](docs/arabic-extraction.md) explains the measured
+three-fixture PDFium fallback, its limitations, and the optional
+`OCR_ENABLED=false` setting. Enabling OCR requires `backend[ocr]`, Tesseract
+and the `ara+eng` language packs installed on the host; the stock Docker image
+does not include them. No general Arabic extraction accuracy gain is claimed.
 
 ## License
 

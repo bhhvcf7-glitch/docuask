@@ -1,16 +1,16 @@
 import re
 from dataclasses import dataclass
+from pathlib import Path
 
 from app.ingestion.text import normalize_arabic
 
 _ARABIC_WORD = re.compile(r"[\u0621-\u064a]+")
 _UNMAPPED_CID = re.compile(r"\(cid:\d+\)")
-_COMMON_WORDS = frozenset({
-    "مرحبا", "اسمي", "انا", "انت", "من", "في", "على", "الى",
-    "العربية", "اللغة", "الخطوط", "انواع", "هذه", "هذا",
-    "التي", "الذي", "هل", "اين", "ما", "لم", "اذا",
-    "شئت", "الانجليزية",
-})
+_WORDS = frozenset(
+    word.strip()
+    for word in Path(__file__).with_name("arabic_words.txt").read_text(encoding="utf-8").splitlines()
+    if word.strip()
+)
 
 
 @dataclass(frozen=True)
@@ -29,9 +29,9 @@ def inspect_arabic(text: str) -> ArabicQuality:
 
     plain = normalize_arabic(text)
     words = _ARABIC_WORD.findall(plain)
-    forward = sum(word in _COMMON_WORDS for word in words)
+    forward = sum(word in _WORDS for word in words)
     reversed_words = sum(
-        word[::-1] in _COMMON_WORDS and word not in _COMMON_WORDS
+        word[::-1] in _WORDS and word not in _WORDS
         for word in words
     )
     if reversed_words >= 3 and reversed_words >= 3 * max(forward, 1):

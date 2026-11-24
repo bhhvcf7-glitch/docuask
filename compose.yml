@@ -14,6 +14,8 @@ services:
       QDRANT_URL: http://qdrant:6333
       QDRANT_COLLECTION: ${QDRANT_COLLECTION:-docuask_e5_small_v1}
       PRELOAD_EMBEDDINGS: ${PRELOAD_EMBEDDINGS:-true}
+      PDFIUM_FALLBACK: ${PDFIUM_FALLBACK:-true}
+      OCR_ENABLED: ${OCR_ENABLED:-false}
       JWT_SECRET: ${JWT_SECRET:?Set a random JWT_SECRET in .env}
       ACCESS_TOKEN_MINUTES: ${ACCESS_TOKEN_MINUTES:-30}
       STORAGE_DIR: /app/storage

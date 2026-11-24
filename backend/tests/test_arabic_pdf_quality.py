@@ -25,7 +25,10 @@ def test_public_arabic_pdfs_show_real_extraction_damage(filename: str) -> None:
     assert "suspected_reversed_words" in quality.issues
     assert quality.unreliable
     with pytest.raises(ExtractionError, match="unreliable on page 1"):
-        extract_pages(path)
+        extract_pages(path, pdfium_fallback=False)
+    recovered = extract_pages(path)
+    assert len(recovered) == 1
+    assert not inspect_arabic(recovered[0][1]).unreliable
 
 
 def test_reversed_words_are_detected_but_never_reordered() -> None:

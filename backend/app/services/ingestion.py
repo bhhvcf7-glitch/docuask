@@ -49,7 +49,11 @@ async def ingest_document(
             path = (settings.storage_dir.resolve() / claimed).resolve()
             if not path.is_relative_to(settings.storage_dir.resolve()):
                 raise ExtractionError("Invalid stored document path")
-            pages = await run_in_threadpool(extract_pages, path, max_pages=200)
+            pages = await run_in_threadpool(
+                extract_pages, path, max_pages=200,
+                pdfium_fallback=settings.pdfium_fallback,
+                ocr_enabled=settings.ocr_enabled,
+            )
             pieces = chunk_pages(pages)
             if not pieces:
                 raise ExtractionError("PDF has no text to index")

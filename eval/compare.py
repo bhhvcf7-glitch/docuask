@@ -2,7 +2,9 @@
 
 import argparse
 import asyncio
+import hashlib
 import json
+import platform
 from datetime import UTC, datetime
 from pathlib import Path
 from time import perf_counter
@@ -23,10 +25,12 @@ from app.retrieval.vectors import VectorIndex
 from app.services.search import search_documents
 from eval.build_corpus import ROOT, build_corpus, load_manifest
 from eval.metrics import summarize
-from eval.run import check_corpus, load_questions
+from eval.run import DATASET, check_corpus, load_questions
 
 
-async def compare(pdf_dir: Path, *, include_reranker: bool) -> dict:
+async def compare(
+    pdf_dir: Path, *, include_reranker: bool, candidate_counts: list[int] | None = None,
+) -> dict:
     settings = Settings()
     if settings.app_env != "test":
         raise ValueError("Set APP_ENV=test and use a dedicated evaluation database")
@@ -66,13 +70,19 @@ async def compare(pdf_dir: Path, *, include_reranker: bool) -> dict:
                 await index.upsert(
                     user_id=owner, document_id=document_id, chunks=chunks, vectors=vectors,
                 )
-        modes = [("dense", False), ("hybrid", False)]
+        modes = [("dense", False, settings.rerank_candidates, "dense"),
+                 ("hybrid", False, settings.rerank_candidates, "hybrid")]
         if include_reranker:
             load_model()
-            modes.append(("hybrid", True))
-        for mode, rerank in modes:
+            counts_to_test = candidate_counts or [settings.rerank_candidates]
+            for count in dict.fromkeys(counts_to_test):
+                if not 5 <= count <= 50:
+                    raise ValueError("Candidate counts must be between 5 and 50")
+                name = "hybrid_reranked" if candidate_counts is None else f"hybrid_reranked_{count}"
+                modes.append(("hybrid", True, count, name))
+        for mode, rerank, count, name in modes:
             configured = settings.model_copy(update={
-                "retrieval_mode": mode, "rerank_enabled": rerank,
+                "retrieval_mode": mode, "rerank_enabled": rerank, "rerank_candidates": count,
             })
             observations = []
             async with sessions() as session:
@@ -97,12 +107,16 @@ async def compare(pdf_dir: Path, *, include_reranker: bool) -> dict:
             metric_rows = [dict(row, query_ms=0, search_ms=0) for row in observations]
             summary = summarize(questions, metric_rows, settings.qa_min_score)
             summary["latency_ms"] = {"total_ms": summary["latency_ms"]["total_ms"]}
-            reports[mode + ("_reranked" if rerank else "")] = {
+            reports[name] = {
+                "rerank_candidates": count if rerank else None,
                 "metrics": summary, "observations": observations,
             }
         return {"measured_at_utc": datetime.now(UTC).isoformat(), "counts": counts,
                 "embedding_model": MODEL_NAME, "reranker_model": RERANK_MODEL if include_reranker else None,
-                "threshold": settings.qa_min_score, "modes": reports}
+                "threshold": settings.qa_min_score,
+                "dataset_sha256": hashlib.sha256(DATASET.read_bytes()).hexdigest(),
+                "platform": platform.platform(), "processor": platform.processor(),
+                "limit": 5, "modes": reports}
     finally:
         try:
             async with sessions.begin() as session:
@@ -119,11 +133,18 @@ async def compare(pdf_dir: Path, *, include_reranker: bool) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--rerank", action="store_true")
+    parser.add_argument("--candidates", type=int, nargs="+",
+                        help="Compare explicit reranker candidate counts (5–50)")
     parser.add_argument("--output", type=Path, default=Path("docs/eval/compare.local.json"))
     args = parser.parse_args()
+    if args.candidates is not None:
+        if not args.rerank or any(not 5 <= n <= 50 for n in args.candidates):
+            parser.error("--candidates requires --rerank and counts between 5 and 50")
     pdf_dir = ROOT / "corpus" / "pdfs"
     build_corpus(pdf_dir)
-    result = asyncio.run(compare(pdf_dir, include_reranker=args.rerank))
+    result = asyncio.run(compare(
+        pdf_dir, include_reranker=args.rerank, candidate_counts=args.candidates,
+    ))
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps({k: v["metrics"] for k, v in result["modes"].items()}, indent=2))

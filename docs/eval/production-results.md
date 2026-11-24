@@ -32,3 +32,7 @@ Same workflow, job 138535050384, artifact 14934842876, evaluated commit e1fc7948
 | Retrieval p95 (ms) | 32.980 | 62.613 | 18054.897 |
 
 No answer accuracy is measured. Reranking remains optional.
+
+## Operating decision
+
+Keep dense as default and reranking opt-in. The historical comparison shows a net gain of 11 first-page matches among 72 answerable questions (55 to 66), with approximately 567 times the median retrieval latency. These are aggregate, rounded results, not paired significance tests. The candidate-budget sweep is implemented but not yet measured. See ../reranking.md for the experiment.

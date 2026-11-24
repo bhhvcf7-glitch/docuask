@@ -9,7 +9,7 @@ Bilingual PDF question answering with citations. **MVP phase 8 and a minimal Rea
 | FastAPI, PostgreSQL, Qdrant, Docker Compose | Implemented; local full-stack smoke test still required |
 | Argon2 login and JWT access | Implemented; casefolded email uniqueness enforced by migration |
 | Authenticated PDF upload, SHA-256 deduplication | Implemented; failed documents can retry, owner can delete |
-| PDF text extraction, Arabic normalization, page-numbered chunks | Implemented; phase 3 prefers paragraph and Arabic/English sentence boundaries |
+| PDF text extraction, Arabic normalization, page-numbered chunks | Implemented; Arabic PDF extraction diagnostics and conservative rejection of high-confidence corruption added in V2 phase 4 |
 | Multilingual-e5-small dense indexing and owner-scoped retrieval | Implemented; semantic quality not yet benchmarked |
 | OpenAI-compatible / Ollama LLM providers | Implemented; external model inference not exercised in CI |
 | SSE grounded QA, numbered citations mapped to retrieved chunk IDs | Implemented; provider and streaming behavior covered by mocks |
@@ -19,7 +19,7 @@ Bilingual PDF question answering with citations. **MVP phase 8 and a minimal Rea
 | Deployment | Not implemented |
 | Hit@k / MRR and latency benchmarks | Not measured |
 
-[Architecture design](docs/design/architecture.md) · [MVP plan](docs/mvp-plan.md) · [Historical roadmap](docs/design/roadmap.md)
+[Architecture design](docs/design/architecture.md) · [MVP plan](docs/mvp-plan.md) · [Arabic PDF extraction](docs/arabic-extraction.md) · [Historical roadmap](docs/design/roadmap.md)
 
 ## Run on Windows
 
@@ -98,6 +98,10 @@ Citations now use short `[1]` or `[2]` tokens in the prompt and model output. Th
 ## V2 Phase 3: chunk boundaries
 
 `chunk_pages` emits separate chunks for separate paragraphs, even when both would fit together. Within an oversized paragraph, it packs complete sentences first and uses Arabic (`؟`, `،`, `؛`) and English (`.`, `?`, `!`, `,`, `;`, `:`) punctuation as preferred boundaries. It falls back to words when a sentence alone exceeds the maximum chunk size, and splits oversized individual words only when necessary. Overlap applies only when size forces a split, not across paragraphs or PDF pages. The existing `ordinal`, one-based `page_number`, `original_text` and `normalized_text` fields are unchanged. There is no migration. Sentence splitting is heuristic; abbreviations and extracted PDF layout can still produce imperfect boundaries. Chunking and retrieval accuracy are not yet measured.
+
+## V2 Phase 4: Arabic PDF extraction
+
+Three public Arabic PDF fixtures from jsPDF, PDF.js and Tabula are checked into the test suite. Their real pdfplumber output contains Arabic presentation forms and reversed-order words. The extraction quality check logs presentation forms and rejects high-confidence reversal, disconnected-letter or unmapped-glyph patterns rather than indexing unreliable source text. Selective Unicode NFKC decomposes Arabic presentation forms only in normalized text, never in original citation text. These heuristics can miss errors and do not replace OCR or correct visual reading order. See [observations, provenance and reproduction](docs/arabic-extraction.md). No Arabic CER/WER or retrieval-quality improvement is claimed.
 
 ## License
 

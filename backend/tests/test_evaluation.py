@@ -68,3 +68,33 @@ def test_metrics_refuse_empty_samples_and_bad_alignment() -> None:
         percentile([], 0.95)
     with pytest.raises(ValueError, match="observation"):
         summarize([{"id": "a"}], [], 0.45)
+
+
+class FakeEmbeddings:
+    dimension = 3
+
+    async def documents(self, passages: list[str]) -> list[list[float]]:
+        return [[1.0, 0.0, 0.0] for _ in passages]
+
+    async def query(self, question: str) -> list[float]:
+        return [1.0, 0.0, 0.0]
+
+
+@pytest.mark.asyncio
+async def test_evaluation_uses_existing_qdrant_index_without_model_weights(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from eval import run
+
+    build_corpus(tmp_path)
+    monkeypatch.setattr(run, "E5Embeddings", FakeEmbeddings)
+    report = await run.evaluate(
+        tmp_path, load_manifest(), load_questions(), threshold=0.45
+    )
+
+    assert report["model"] == run.MODEL_NAME
+    assert len(report["observations"]) == 48
+    assert report["metrics"]["answerable_count"] == 40
+    assert report["metrics"]["unanswerable_count"] == 8
+    assert all(len(row["hits"]) <= 5 for row in report["observations"])
+    assert all("total_ms" in row for row in report["observations"])

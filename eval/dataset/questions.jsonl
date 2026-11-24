@@ -19,7 +19,7 @@
 {"id":"ar_water_09","language":"ar","question":"كم فنيا يعمل ضمن فريق الصيانة؟","answer":"ثمانية فنيين","expected_document":"ar_water.pdf","expected_page":2,"answerable":true}
 {"id":"ar_water_10","language":"ar","question":"ما رقم خط البلاغات عن الأعطال؟","answer":"144","expected_document":"ar_water.pdf","expected_page":2,"answerable":true}
 {"id":"en_transit_01","language":"en","question":"When did the Northbridge bus pilot start?","answer":"April 2024","expected_document":"en_transit.pdf","expected_page":1,"answerable":true}
-{"id":"en_transit_02","language":"en","question":"Which two locations does Route C connect?","answer":"Cedar Park and Riverside Station","expected_document":"en_transit.pdf","expected_page":1,"answerable":true}
+{"id":"en_transit_02","language":"en","question":"Which two locations does Route C connect?","answer":"Cedar Park to Riverside Station","expected_document":"en_transit.pdf","expected_page":1,"answerable":true}
 {"id":"en_transit_03","language":"en","question":"How many electric buses are in the pilot?","answer":"twelve","expected_document":"en_transit.pdf","expected_page":1,"answerable":true}
 {"id":"en_transit_04","language":"en","question":"What is the earliest weekday departure time?","answer":"6:15 a.m.","expected_document":"en_transit.pdf","expected_page":1,"answerable":true}
 {"id":"en_transit_05","language":"en","question":"How much is a standard one-way ticket?","answer":"three dollars","expected_document":"en_transit.pdf","expected_page":1,"answerable":true}

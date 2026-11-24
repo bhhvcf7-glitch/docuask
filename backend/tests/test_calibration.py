@@ -1,5 +1,4 @@
 import pytest
-
 from eval.calibrate import collect_scores, describe, gate_metrics, select_candidate, sweep
 
 CASES = [{"id": "a", "answerable": True}, {"id": "b", "answerable": False}]

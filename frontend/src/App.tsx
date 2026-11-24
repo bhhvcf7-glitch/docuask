@@ -4,13 +4,14 @@ import {
   FileSearch, FileText, Languages, LoaderCircle, LogOut, MessageSquareText,
   Send, ShieldCheck, Sparkles, Square, UploadCloud,
 } from 'lucide-react'
-import { api, streamAnswer, type Citation, type DocumentItem } from './api'
+import { api, authorizedFetch, streamAnswer, type Citation, type DocumentItem } from './api'
 
+import { endSession, setSession, type TokenPair } from './session'
 import { PdfViewer } from './PdfViewer'
 
 type Lang = 'ar' | 'en'
 type User = { id: string; email: string }
-type Session = { access_token: string }
+type Session = TokenPair
 
 const copy = {
   ar: {
@@ -111,6 +112,7 @@ export default function App() {
         method: 'POST', body: JSON.stringify({ email, password }),
       })
       const profile = await api<User>('/auth/me', session.access_token)
+      setSession(session)
       setUser(profile)
       setToken(session.access_token)
       setPassword('')
@@ -177,6 +179,7 @@ export default function App() {
   }
 
   function signOut() {
+    endSession()
     abortRef.current?.abort()
     setConversationId(undefined)
     setViewer(undefined)
@@ -209,7 +212,7 @@ export default function App() {
   async function removeHistory(id: string) {
     if (!token || asking) return
     try {
-      const response = await fetch('/conversations/' + id, { method: 'DELETE', headers: { Authorization: 'Bearer ' + token } })
+      const response = await authorizedFetch('/conversations/' + id, token, { method: 'DELETE' })
       if (!response.ok) throw new Error('HTTP ' + response.status)
       if (conversationId === id) { setConversationId(undefined); setTurns([]); setAnswer(''); setCitations([]); setViewer(undefined) }
       await refreshHistory()

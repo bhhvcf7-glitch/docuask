@@ -1,0 +1,100 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    environment:
+      DOCUASK_DOMAIN: ${DOCUASK_DOMAIN:?Set a DNS hostname}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      APP_ENV: production
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-docuask}
+      POSTGRES_USER: ${POSTGRES_USER:-docuask}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Copy .env.example to .env and set POSTGRES_PASSWORD}
+      QDRANT_URL: http://qdrant:6333
+      QDRANT_COLLECTION: ${QDRANT_COLLECTION:-docuask_e5_small_v1}
+      PRELOAD_EMBEDDINGS: ${PRELOAD_EMBEDDINGS:-true}
+      PDFIUM_FALLBACK: ${PDFIUM_FALLBACK:-true}
+      OCR_ENABLED: ${OCR_ENABLED:-false}
+      JWT_SECRET: ${JWT_SECRET:?Set a random JWT_SECRET in .env}
+      REFRESH_TOKEN_DAYS: ${REFRESH_TOKEN_DAYS:-14}
+      AUTH_RATE_LIMIT: ${AUTH_RATE_LIMIT:-60}
+      API_RATE_LIMIT: ${API_RATE_LIMIT:-180}
+      ACCESS_TOKEN_MINUTES: ${ACCESS_TOKEN_MINUTES:-30}
+      STORAGE_DIR: /app/storage
+      MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:-10485760}
+      STALE_PROCESSING_MINUTES: ${STALE_PROCESSING_MINUTES:-30}
+      LLM_PROVIDER: ${LLM_PROVIDER:-ollama}
+      LLM_MODEL: ${LLM_MODEL:-llama3.2:3b}
+      OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      RETRIEVAL_MODE: ${RETRIEVAL_MODE:-dense}
+      RERANK_ENABLED: ${RERANK_ENABLED:-false}
+      RERANK_CANDIDATES: ${RERANK_CANDIDATES:-20}
+      QA_MIN_SCORE: ${QA_MIN_SCORE:-0.45}
+      QA_MAX_ANSWER_CHARS: ${QA_MAX_ANSWER_CHARS:-10000}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --no-proxy-headers"]
+    volumes:
+      - uploads_data:/app/storage
+      - model_cache:/app/model-cache
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/ready', timeout=5).close()"]
+      interval: 15s
+      timeout: 8s
+      start_period: 90s
+      retries: 3
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-docuask}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Copy .env.example to .env and set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-docuask}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-docuask} -d ${POSTGRES_DB:-docuask}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  qdrant:
+    image: qdrant/qdrant:v1.12.6
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:
+  postgres_data:
+  qdrant_data:
+  uploads_data:
+  model_cache:

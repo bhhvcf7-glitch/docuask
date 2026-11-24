@@ -1,0 +1,10 @@
+FROM node:22-alpine AS build
+WORKDIR /src
+COPY frontend/package*.json ./
+RUN npm ci --no-audit --no-fund
+COPY frontend/ ./
+RUN npm run build
+
+FROM caddy:2-alpine
+COPY --from=build /src/dist /srv
+COPY deploy/Caddyfile /etc/caddy/Caddyfile

@@ -1,0 +1,32 @@
+name: production-build
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DOCUASK_DOMAIN: localhost
+      POSTGRES_PASSWORD: ci-only-password
+      JWT_SECRET: ci-only-secret-at-least-thirty-two-characters
+      PRELOAD_EMBEDDINGS: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose -f compose.production.yml config --quiet
+      - run: docker compose -f compose.production.yml build
+      - run: docker compose -f compose.production.yml up -d --wait --wait-timeout 180
+      - name: Verify local HTTPS and reverse proxy
+        run: |
+          curl --fail --insecure --retry 10 --retry-all-errors https://localhost/health
+          curl --fail --insecure https://localhost/ready
+          curl --fail --insecure https://localhost/ | grep -q 'id="root"'
+          test "$(curl -ks -o /dev/null -w '%{http_code}' https://localhost/documents)" = 401
+      - if: always()
+        run: docker compose -f compose.production.yml logs --tail 80
+      - if: always()
+        run: docker compose -f compose.production.yml down -v

@@ -18,3 +18,5 @@ docs/eval/results*.json
 
 docs/extraction/comparison.local.json
 docs/extraction/comparison.local.md
+
+docs/eval/*.local.json

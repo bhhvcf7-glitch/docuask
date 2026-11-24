@@ -165,3 +165,7 @@ Open a citation to render its original page with exact word-coordinate highlight
 ## Security hardening
 
 Rotating opaque refresh tokens, bounded request rate limits, structured request timing and separated untrusted evidence are available. See [security notes](docs/security.md).
+
+## Production deployment candidate / التشغيل
+
+See [deployment and security review](docs/deployment.md) and [measured retrieval baseline](docs/eval/production-results.md). The HTTPS Docker stack is configured for a single host; no external deployment is claimed.

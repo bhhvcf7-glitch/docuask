@@ -1,3 +1,5 @@
+import { currentAccess, renewAccess } from './session'
+
 export type DocumentStatus = 'queued' | 'processing' | 'ready' | 'failed'
 
 export type DocumentItem = {
@@ -24,6 +26,20 @@ export type StreamEvent =
   | { type: 'error'; payload: { message: string } }
   | { type: 'done'; payload: Record<string, never> }
 
+export async function authorizedFetch(path: string, token: string | null, init: RequestInit = {}): Promise<Response> {
+  const send = (key: string | null) => {
+    const headers = new Headers(init.headers)
+    if (key) headers.set('Authorization', 'Bearer ' + key)
+    return fetch(path, { ...init, headers })
+  }
+  const key = token ? currentAccess(token) : null
+  const response = await send(key)
+  if (response.status !== 401 || !key || init.signal?.aborted) return response
+  const replacement = await renewAccess(key)
+  if (!replacement || init.signal?.aborted) return response
+  return send(replacement)
+}
+
 export async function api<T>(
   path: string,
   token: string | null,
@@ -34,7 +50,7 @@ export async function api<T>(
   if (init.body && !(init.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json')
   }
-  const response = await fetch(path, { ...init, headers })
+  const response = await authorizedFetch(path, token, { ...init, headers })
   if (!response.ok) {
     const info = await response.json().catch(() => ({}))
     throw new Error(typeof info.detail === 'string' ? info.detail : `HTTP ${response.status}`)
@@ -72,7 +88,7 @@ export async function streamAnswer(
   onEvent: (event: StreamEvent) => void,
   conversationId?: string,
 ): Promise<void> {
-  const response = await fetch('/qa/ask', {
+  const response = await authorizedFetch('/qa/ask', token, {
     method: 'POST',
     signal,
     headers: {

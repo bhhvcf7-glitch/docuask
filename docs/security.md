@@ -1,0 +1,9 @@
+# Security and operational limits
+
+Apply migration 0005 before login. Login returns an access token plus an opaque random refresh token. POST /auth/refresh rotates the refresh token; POST /auth/logout revokes its family. Only SHA-256 digests are stored. A PostgreSQL transaction advisory lock serializes family operations; reuse revokes the family. Absolute expiry is 14 days by default. Previously issued access JWTs remain valid until expiration. The browser still uses access tokens only; automatic refresh and secure cookie integration are not implemented. Clients must protect refresh tokens as credentials. Expired token cleanup needs an operational job.
+
+The bounded sliding-window limiter is per process (60 auth requests/minute per peer and 180 API requests/minute per verified user or peer by default). It does not trust forwarded headers. Behind a reverse proxy, anonymous clients share a bucket unless trusted proxy handling is configured. Multi-worker/distributed limits require a shared store. Health checks are exempt. Request logs record status, request ID and response-header latency (not complete SSE duration); unhandled errors log a generic event without question contents. Private API responses are no-store.
+
+Document evidence is JSON-encoded in a user-role message rather than interpolated into the system role. The system explicitly treats evidence as untrusted. This is defense in depth, not a guarantee against prompt injection; citation structure checks do not establish semantic entailment. No new external tools are exposed to the model.
+
+Performance improvements here are bounded limiter memory and bounded login passwords; no throughput or latency gain is claimed without benchmarks. Existing dense retrieval remains default. Production still requires HTTPS, distributed abuse protection, monitoring and retention policy.

@@ -161,3 +161,7 @@ Authenticated clients can create, list, read and delete conversations. Pass `con
 ## Interactive source viewer
 
 Open a citation to render its original page with exact word-coordinate highlights when available. See [viewer limitations](docs/pdf-viewer.md).
+
+## Security hardening
+
+Rotating opaque refresh tokens, bounded request rate limits, structured request timing and separated untrusted evidence are available. See [security notes](docs/security.md).

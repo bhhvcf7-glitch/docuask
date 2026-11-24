@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     qdrant_collection: str = "docuask_e5_small_v1"
     jwt_secret: SecretStr | None = None
     access_token_minutes: int = Field(default=30, ge=1, le=1440)
+    refresh_token_days: int = Field(default=14, ge=1, le=90)
+    auth_rate_limit: int = Field(default=60, ge=1, le=1000)
+    api_rate_limit: int = Field(default=180, ge=1, le=10000)
     storage_dir: Path = Path("storage")
     stale_processing_minutes: int = Field(default=30, ge=1, le=1440)
     preload_embeddings: bool = True

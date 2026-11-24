@@ -15,7 +15,7 @@ class Credentials(BaseModel):
 
 class LoginCredentials(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(min_length=1, max_length=128)
 
     @field_validator("email")
     @classmethod
@@ -33,3 +33,8 @@ class UserPublic(BaseModel):
 class AccessToken(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    refresh_token: str
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str = Field(min_length=32, max_length=256)

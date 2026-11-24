@@ -118,3 +118,26 @@ async def test_token_identity_cannot_read_another_users_document(api) -> None:
     assert profile.json()["id"] == bob["id"]
     assert await get_document(session, user_id=UUID(bob["id"]), document_id=doc_id) is None
     assert await get_document(session, user_id=UUID(alice["id"]), document_id=doc_id)
+
+
+async def test_refresh_rotation_and_replay_revokes_family(api) -> None:
+    client, session = api
+    email = f"{uuid4()}@example.com"
+    password = "valid-password-123"
+    assert (await client.post("/auth/register", json={
+        "email": email, "password": password,
+    })).status_code == 201
+    login = await client.post("/auth/login", json={"email": email, "password": password})
+    raw = login.json()["refresh_token"]
+    from app.db.models import RefreshToken
+    from app.services.refresh import digest_token
+    assert await session.get(RefreshToken, raw) is None
+    assert await session.get(RefreshToken, digest_token(raw)) is not None
+    rotated = await client.post("/auth/refresh", json={"refresh_token": raw})
+    assert rotated.status_code == 200
+    replacement = rotated.json()["refresh_token"]
+    assert replacement != raw
+    assert (await client.post("/auth/refresh", json={"refresh_token": raw})).status_code == 401
+    assert (await client.post("/auth/refresh", json={
+        "refresh_token": replacement,
+    })).status_code == 401

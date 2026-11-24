@@ -1,8 +1,10 @@
 from contextlib import asynccontextmanager
+from time import perf_counter
 from uuid import uuid4
 
 import structlog
 from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from qdrant_client import AsyncQdrantClient
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from starlette.concurrency import run_in_threadpool
@@ -15,8 +17,10 @@ from app.api.routes.health import router as health_router
 from app.api.routes.qa import router as qa_router
 from app.api.routes.search import router as search_router
 from app.core.config import get_settings
+from app.core.limits import RateLimiter
 from app.core.logging import configure_logging
 from app.core.resources import AppResources
+from app.core.security import verify_access_token
 from app.db.session import database_url
 from app.retrieval.embeddings import E5Embeddings, load_model
 from app.retrieval.vectors import VectorIndex
@@ -65,6 +69,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
     configure_logging(settings.log_level)
 
+    limiter = RateLimiter()
     app = FastAPI(title="DocuAsk API", version="0.1.0", lifespan=lifespan)
     app.include_router(health_router)
     app.include_router(auth_router)
@@ -78,14 +83,42 @@ def create_app() -> FastAPI:
         clear_contextvars()
         request_id = uuid4().hex
         bind_contextvars(request_id=request_id)
+        started = perf_counter()
         try:
-            response = await call_next(request)
+            path = request.url.path
+            peer = request.client.host if request.client else "unknown"
+            group = "auth" if path in {"/auth/login", "/auth/register", "/auth/refresh"} else "api"
+            identity = peer
+            if group == "api" and settings.jwt_secret is not None:
+                bearer = request.headers.get("Authorization", "")
+                if bearer.startswith("Bearer "):
+                    owner = verify_access_token(bearer[7:], settings.jwt_secret)
+                    if owner is not None:
+                        identity = str(owner)
+            limit = settings.auth_rate_limit if group == "auth" else settings.api_rate_limit
+            if path not in {"/health", "/ready"} and not limiter.allow((group, identity), limit):
+                response = JSONResponse(
+                    {"detail": "Too many requests"}, status_code=429,
+                    headers={"Retry-After": "60"},
+                )
+            else:
+                response = await call_next(request)
+            response.headers["X-Content-Type-Options"] = "nosniff"
+            response.headers["Referrer-Policy"] = "no-referrer"
+            if path.startswith(("/auth", "/qa", "/search", "/conversations", "/documents")):
+                response.headers["Cache-Control"] = "no-store"
             response.headers["X-Request-ID"] = request_id
             log.info(
                 "http_request", method=request.method, path=request.url.path,
                 status_code=response.status_code,
+                latency_ms=round((perf_counter() - started) * 1000, 3),
             )
             return response
+        except Exception:
+            log.error("request_failed", method=request.method, latency_ms=round(
+                (perf_counter() - started) * 1000, 3
+            ))
+            raise
         finally:
             clear_contextvars()
 

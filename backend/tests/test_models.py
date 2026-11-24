@@ -5,7 +5,7 @@ from app.db.models import Base
 
 def test_current_schema_tables_are_defined() -> None:
     assert set(Base.metadata.tables) == {
-        "users", "documents", "chunks", "conversations", "conversation_turns"
+        "users", "documents", "chunks", "conversations", "conversation_turns", "refresh_tokens"
     }
 
 

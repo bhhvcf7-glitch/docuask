@@ -5,10 +5,9 @@ from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Up
 from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.api.dependencies import get_current_user, get_resources, get_session
 from starlette.concurrency import run_in_threadpool
 
+from app.api.dependencies import get_current_user, get_resources, get_session
 from app.core.config import Settings, get_settings
 from app.core.resources import AppResources
 from app.db.models import Chunk, User

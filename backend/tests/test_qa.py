@@ -217,3 +217,61 @@ async def test_raw_answer_limit_counts_invalid_references():
         provider=FakeProvider(["[99]" * 30]), search=search,
     )])
     assert [kind for kind, _ in records] == ["error"]
+
+
+@pytest.mark.parametrize(("label", "expected"), [
+    ("1, 2", "[1][2]"), ("1,2", "[1][2]"), ("1 ,2", "[1][2]"),
+    ("1-3", "[1][2][3]"), ("1–3", "[1][2][3]"),
+    ("١", "[1]"), ("١،٢", "[1][2]"), ("۱–۳", "[1][2][3]"),
+    ("2,1,2", "[2][1]"),
+])
+def test_grouped_citations_across_all_boundaries(label, expected):
+    raw = f"[{label}]"
+    for offset in range(len(raw) + 1):
+        parser = CitationFilter([HIT, SECOND, HIT])
+        assert parser.push(raw[:offset]) + parser.push(raw[offset:]) == expected
+        assert parser.finish() == ""
+        assert not parser.invalid
+
+
+@pytest.mark.parametrize("label", [
+    "[0]", "[01]", "[٠١]", "[1,99]", "[1-4]", "[3-1]", "[1,,2]",
+    "[1-999999]", "[1[2]]", "[1]]", "[1,", "[1e2]", "[1,]", "[+1]",
+])
+def test_malformed_citations(label):
+    for offset in range(len(label) + 1):
+        parser = CitationFilter([HIT, SECOND, HIT])
+        parser.push(label[:offset])
+        parser.push(label[offset:])
+        parser.finish()
+        assert parser.invalid
+
+
+def test_invalid_group_records_no_sources():
+    parser = CitationFilter([HIT, SECOND])
+    assert parser.push("[1,99]") == ""
+    assert parser.invalid
+    assert parser.sources() == []
+
+
+async def two_hits(*args, **kwargs):
+    return [HIT, SECOND]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(("tokens", "valid"), [
+    (["Evidence [١،", "٢]"], True),
+    (["Evidence [1] [1,", "99]"], False),
+    (["Evidence [1]] then [1]"], False),
+])
+async def test_grouped_qa_response(tokens, valid):
+    records = unpack([p async for p in answer_events(
+        None, user_id=uuid4(), question="What?", limit=5,
+        settings=Settings(_env_file=None), provider=FakeProvider(tokens), search=two_hits,
+    )])
+    if valid:
+        assert [kind for kind, _ in records] == ["token", "citations", "done"]
+        assert records[0][1]["text"] == "Evidence [1][2]"
+        assert [s["number"] for s in records[1][1]["sources"]] == [1, 2]
+    else:
+        assert [kind for kind, _ in records] == ["refusal", "done"]

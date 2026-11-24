@@ -43,6 +43,41 @@ def make_messages(question: str, hits: list[dict]) -> list[dict[str, str]]:
     ]
 
 
+_DIGITS = str.maketrans("٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹", "01234567890123456789")
+_MAX_LABEL_LENGTH = 128
+_CITATION_PART = re.compile(r"([1-9][0-9]{0,2})(?:[ \t]*[-–][ \t]*([1-9][0-9]{0,2}))?")
+
+
+def is_citation_label(label: str) -> bool:
+    stripped = label.strip()
+    return (
+        any(char.isnumeric() for char in stripped)
+        or stripped.lower().startswith("source:")
+        or stripped.startswith(("+", "-", "–", ",", "،"))
+    )
+
+
+def parse_citation(label: str, allowed: set[int]) -> list[int]:
+    if len(label) > _MAX_LABEL_LENGTH or "\n" in label or "\r" in label:
+        raise ValueError("Invalid citation format")
+    normalized = label.translate(_DIGITS).replace("،", ",")
+    numbers: list[int] = []
+    for part in normalized.split(","):
+        match = _CITATION_PART.fullmatch(part.strip(" \t"))
+        if match is None:
+            raise ValueError("Invalid citation format")
+        start = int(match.group(1))
+        end = int(match.group(2) or start)
+        if end < start or start not in allowed or end not in allowed:
+            raise ValueError("Invalid citation range")
+        for number in range(start, end + 1):
+            if number not in allowed:
+                raise ValueError("Citation outside retrieved sources")
+            if number not in numbers:
+                numbers.append(number)
+    return numbers
+
+
 class CitationFilter:
     def __init__(self, hits: list[dict]):
         self.allowed = {
@@ -58,32 +93,38 @@ class CitationFilter:
         while self.pending:
             start = self.pending.find("[")
             if start < 0:
+                if "]" in self.pending:
+                    self.invalid = True
                 emitted.append(self.pending)
                 self.pending = ""
                 break
+            if "]" in self.pending[:start]:
+                self.invalid = True
             emitted.append(self.pending[:start])
             self.pending = self.pending[start:]
             end = self.pending.find("]")
             if end == -1:
-                if len(self.pending) > 128:
+                if len(self.pending) > _MAX_LABEL_LENGTH + 1:
                     self.invalid = True
                     self.pending = ""
                 break
 
             label = self.pending[1:end]
             raw = self.pending[:end + 1]
-            if label.isascii() and label.isdecimal():
-                number = int(label) if len(label) <= 3 else -1
-                if str(number) == label and number in self.allowed:
-                    if number not in self.used:
-                        self.used.append(number)
-                    emitted.append(f"[{number}]")
-                else:
-                    self.invalid = True
-            elif not label.startswith("source:"):
-                emitted.append(raw)
-            else:
+            if len(label) > _MAX_LABEL_LENGTH or "[" in label or not label.strip():
                 self.invalid = True
+            elif is_citation_label(label):
+                try:
+                    numbers = parse_citation(label, set(self.allowed))
+                except ValueError:
+                    self.invalid = True
+                else:
+                    for number in numbers:
+                        if number not in self.used:
+                            self.used.append(number)
+                        emitted.append(f"[{number}]")
+            else:
+                emitted.append(raw)
             self.pending = self.pending[end + 1:]
         return "".join(emitted)
 

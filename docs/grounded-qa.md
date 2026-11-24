@@ -5,3 +5,7 @@ The retrieval gate continues to use cosine similarity, not RRF or cross-encoder 
 SSE event names and payloads are unchanged, but token delivery is now buffered: first visible text arrives after generation and structural validation. Provider failures and truncated streams do not release partial answer text. This trades time to first token for safer output. The sentence splitter is heuristic and can over-refuse abbreviations and complex formatting. A valid citation is NOT proof that the cited passage entails the claim; semantic verification and real answer-quality evaluation remain future work. The existing synthetic retrieval corpus is not an answer-grounding benchmark.
 
 Tests cover valid bilingual references, uncited trailing sentences, invented citations, incomplete references, raw size limits and source mappings.
+
+## Citation syntax
+
+Individual numbers, comma groups, ascending ranges and Arabic-Indic digits are accepted, including [1, 2], [1–3] and [١،٢]. The server normalizes them to consecutive ASCII markers. Every number must belong to the retrieved source set. A malformed group, leading zero, unmatched bracket or out-of-set number refuses the complete answer. Numeric bracketed prose may be conservatively rejected. The SSE contract is unchanged.

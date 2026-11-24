@@ -1,6 +1,3 @@
-from pathlib import Path
-
-from app.ingestion.quality import inspect_arabic
 from scripts.compare_arabic_extractors import (
     ANCHORS,
     FIXTURES,
@@ -9,6 +6,8 @@ from scripts.compare_arabic_extractors import (
     markdown_table,
     pypdf_pages,
 )
+
+from app.ingestion.quality import inspect_arabic
 
 
 def test_comparison_reports_inspector_and_reference_independently() -> None:

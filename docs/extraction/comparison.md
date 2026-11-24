@@ -30,6 +30,43 @@ that every other part of the page is damaged. Extractor outputs for user-
 supplied PDFs have no known reference anchor and are marked
 `manual_review_required`, rather than being graded automatically.
 
+## Measured baseline on three upstream fixtures
+
+GitHub Actions run [45413080689](https://github.com/bhhvcf7-glitch/docuask/actions/runs/45413080689)
+executed the four extractors on 2026-11-24. The table below summarizes
+**first-page anchor checks** and the existing quality inspector:
+
+| Extractor | First-page anchor found | Pages rejected by inspector | Observations |
+| --- | ---: | ---: | --- |
+| pdfplumber | 0/3 | 3/3 | Reversed visual-order phrases in every fixture |
+| pypdfium2 | 3/3 | 0/3 | Correct-order reference phrases found in all three |
+| PyMuPDF | 2/3 | 0/3 | Presentation forms remained; Tabula anchor was not an exact match |
+| pypdf | 1/3 | 0/3 | Reference phrase found only for jsPDF; PDF.js and Tabula appeared visually reordered |
+
+The inspector's pass/reject result is not a correctness score. In particular,
+PyMuPDF and pypdf pass the current heuristic on some output where the reference
+phrase is absent. The PyMuPDF Tabula sample contains non-breaking spaces and
+may be readable despite failing the exact substring check. Read the raw
+samples before interpreting that result.
+
+Detailed per-fixture results:
+
+| PDF | pdfplumber | pypdfium2 | PyMuPDF | pypdf |
+| --- | --- | --- | --- | --- |
+| jsPDF | 24 chars; reversed | 24 chars; anchor found | 25 chars; anchor found | 24 chars; anchor found |
+| PDF.js Arabic CID | 79 chars; reversed | 86 chars; anchor found | 80 chars; anchor found | 79 chars; anchor missing |
+| Tabula | 138 chars; reversed | 146 chars; anchor found | 154 chars; anchor missing | 150 chars; anchor missing |
+
+All character counts are from extracted text (not visual glyph counts).
+The [raw CI report](https://github.com/bhhvcf7-glitch/docuask/actions/runs/45413080689/artifacts/14928833277)
+contains actual samples, all issues and the extractor package versions.
+
+**Decision:** Keep pdfplumber in production for now. Prioritize a narrowly
+scoped pypdfium2 fallback experiment next, with tests on more independent
+Arabic layouts and exact page-preservation checks. The three small fixtures
+do not prove page-wide reading-order correctness, nor that fallback improves
+retrieval accuracy.
+
 ## Reproduce on Windows
 
 ```powershell

@@ -70,3 +70,24 @@ def test_normal_arabic_is_not_marked_reversed_or_fragmented() -> None:
 def test_mixed_english_and_arabic_short_text_is_not_rejected() -> None:
     source = "Report 2026: الإيرادات أعلى من السنة الماضية."
     assert not inspect_arabic(source).unreliable
+
+
+@pytest.mark.parametrize("source", [
+    "تستخدم هندسة البرمجيات قواعد البيانات وخوارزميات الاسترجاع.",
+    "Python 3.11 و PostgreSQL 16 لمعالجة المستندات العربية.",
+    "بلغت سرعة الشبكة ٤٧ ميجابت في الثانية عام ٢٠٢٦.",
+    "كتب بتك كتب بتك كتب بتك",
+])
+def test_valid_or_ambiguous_vocabulary_is_not_automatically_reversed(source: str) -> None:
+    assert not inspect_arabic(source).unreliable
+
+
+@pytest.mark.parametrize(("filename", "anchor"), [
+    ("jspdf_arabic.pdf", "إذا لم تستح فاصنع ما شئت"),
+    ("pdfjs_arabic_cid.pdf", "انواع الخطوط العربية"),
+    ("tabula_arabic.pdf", "اسمي سلطان"),
+])
+def test_runtime_fallback_preserves_known_reference_span(filename: str, anchor: str) -> None:
+    pages = extract_pages(FIXTURES / filename)
+    assert [page for page, _ in pages] == [1]
+    assert normalize_arabic(anchor) in normalize_arabic(pages[0][1])

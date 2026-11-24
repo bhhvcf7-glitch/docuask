@@ -55,3 +55,18 @@ def test_comparison_records_errors_without_attributing_quality() -> None:
 
 def test_existing_inspector_still_rejects_known_bad_extraction() -> None:
     assert inspect_arabic("ةيبرعلا ةغللا طوطخلا عاونا").unreliable
+
+
+def test_raw_diagnostics_preserve_line_boundaries() -> None:
+    text = "اسمي سلطان\r\nمرحبا\nJeremy 1234"
+    result = analyze(text, "اسمي سلطان")
+    assert result["raw_sample"] == text
+    assert result["line_samples"] == ["اسمي سلطان", "مرحبا", "Jeremy 1234"]
+    assert result["logical_anchor_found"] is True
+
+
+def test_anchor_does_not_certify_line_order() -> None:
+    first = analyze("اسمي سلطان\nمرحبا", "اسمي سلطان")
+    second = analyze("مرحبا\nاسمي سلطان", "اسمي سلطان")
+    assert first["logical_anchor_found"] == second["logical_anchor_found"] is True
+    assert first["line_samples"] != second["line_samples"]

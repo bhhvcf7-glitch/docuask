@@ -84,6 +84,8 @@ def analyze(text: str, anchor: str | None) -> dict:
             else "manual_review_required"
         ),
         "sample": text[:240].replace("\n", " "),
+        "raw_sample": text[:240],
+        "line_samples": text[:240].splitlines(),
     }
 
 
@@ -124,7 +126,7 @@ def compare(paths: list[Path]) -> dict:
                 ]
             rows.append(entry)
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "extractor_versions": versions,
         "anchor_scope": "Known phrase on the first page of each upstream fixture only",
         "rows": rows,

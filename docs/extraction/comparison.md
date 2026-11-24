@@ -2,8 +2,7 @@
 
 The comparison runs on the three unchanged public regression PDFs in
 `backend/tests/fixtures/arabic/`: jsPDF's `arabic.pdf`, PDF.js's
-`ArabicCIDTrueType.pdf`, and Tabula's `arabic.pdf`. The existing production
-extractor remains **pdfplumber**, and no fallback has been enabled.
+`ArabicCIDTrueType.pdf`, and Tabula's `arabic.pdf`. The historical baseline used **pdfplumber** without fallback. The current runtime enables PDFium fallback for empty or inspector-rejected pages; OCR is optional.
 
 The script runs four extractors on every page:
 
@@ -61,9 +60,7 @@ All character counts are from extracted text (not visual glyph counts).
 The [raw CI report](https://github.com/bhhvcf7-glitch/docuask/actions/runs/45413080689/artifacts/14928833277)
 contains actual samples, all issues and the extractor package versions.
 
-**Decision:** Keep pdfplumber in production for now. Prioritize a narrowly
-scoped pypdfium2 fallback experiment next, with tests on more independent
-Arabic layouts and exact page-preservation checks. The three small fixtures
+**Historical decision:** Retain pdfplumber as the primary extractor and evaluate a narrowly scoped PDFium fallback. The fallback has since been enabled; broader layout validation is still required. The three small fixtures
 do not prove page-wide reading-order correctness, nor that fallback improves
 retrieval accuracy.
 
@@ -117,3 +114,9 @@ is measured.
 
 Scanned PDFs, bidirectional mixed-language runs, and missing ToUnicode
 maps are still outside the scope of a guaranteed solution.
+
+## Phase I: reading-order diagnostics
+
+The extractor-comparison job in [run 45485366699](https://github.com/bhhvcf7-glitch/docuask/actions/runs/45485366699/job/138769193847) printed a Tabula PDFium sample beginning with `اسمي سلطان  ً  مرحبا`. This supports the reference-span check but not a conclusion about the visual order of the whole page. The logged sample flattened line breaks. Visual coordinates and a manually transcribed reference are needed to distinguish within-line ordering from between-line ordering. No global line or word reversal is introduced.
+
+The diagnostic report now preserves raw first-240-character excerpts and line samples separately from the existing flattened Markdown sample. These are sensitive for user-provided PDFs: run locally and do not publish private reports. Reference checks remain limited to upstream fixtures. The vocabulary heuristic is not a language model; unfamiliar terminology and ambiguous reversed tokens can escape detection. Tests cover representative technical and mixed-language text, not a measured population-level false-positive rate.

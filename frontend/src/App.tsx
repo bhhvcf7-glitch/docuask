@@ -6,6 +6,8 @@ import {
 } from 'lucide-react'
 import { api, streamAnswer, type Citation, type DocumentItem } from './api'
 
+import { PdfViewer } from './PdfViewer'
+
 type Lang = 'ar' | 'en'
 type User = { id: string; email: string }
 type Session = { access_token: string }
@@ -60,6 +62,9 @@ export default function App() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [documents, setDocuments] = useState<DocumentItem[]>([])
+  const [viewer, setViewer] = useState<Citation>()
+  const [history, setHistory] = useState<{id: string; created_at: string}[]>([])
+  const [turns, setTurns] = useState<{question: string; answer: string}[]>([])
   const [conversationId, setConversationId] = useState<string | undefined>()
   const [question, setQuestion] = useState('')
   const [answer, setAnswer] = useState('')
@@ -174,12 +179,41 @@ export default function App() {
   function signOut() {
     abortRef.current?.abort()
     setConversationId(undefined)
+    setViewer(undefined)
+    setHistory([])
+    setTurns([])
     setToken(null)
     setUser(null)
     setDocuments([])
     setAnswer('')
     setCitations([])
     setQuestion('')
+  }
+
+  async function refreshHistory() {
+    if (token) setHistory(await api<typeof history>('/conversations', token))
+  }
+
+  async function openHistory(id: string) {
+    if (!token || asking) return
+    try {
+      const chat = await api<{turns: typeof turns}>('/conversations/' + id, token)
+      setConversationId(id)
+      setTurns(chat.turns)
+      setAnswer('')
+      setCitations([])
+      setViewer(undefined)
+    } catch (cause) { setError(String(cause)) }
+  }
+
+  async function removeHistory(id: string) {
+    if (!token || asking) return
+    try {
+      const response = await fetch('/conversations/' + id, { method: 'DELETE', headers: { Authorization: 'Bearer ' + token } })
+      if (!response.ok) throw new Error('HTTP ' + response.status)
+      if (conversationId === id) { setConversationId(undefined); setTurns([]); setAnswer(''); setCitations([]); setViewer(undefined) }
+      await refreshHistory()
+    } catch (cause) { setError(String(cause)) }
   }
 
   const hasReady = documents.some(doc => doc.status === 'ready')
@@ -283,9 +317,13 @@ export default function App() {
             <div className="chat-heading">
               <div className="chat-icon"><MessageSquareText size={22} /></div>
               <div><h1>{t.askTitle}</h1><p>{t.askHelp}</p></div>
-              <button type="button" disabled={asking} onClick={() => { setConversationId(undefined); setAnswer(''); setCitations([]); setQuestion(''); setError('') }}>{lang === 'ar' ? 'محادثة جديدة' : 'New chat'}</button>
+              <button type="button" disabled={asking} onClick={() => { setConversationId(undefined); setTurns([]); setViewer(undefined); setAnswer(''); setCitations([]); setQuestion(''); setError('') }}>{lang === 'ar' ? 'محادثة جديدة' : 'New chat'}</button>
             </div>
             <div className="chat-body">
+              <button disabled={asking} onClick={() => void refreshHistory().catch(cause => setError(String(cause)))}>{lang === "ar" ? "عرض المحادثات السابقة" : "Show previous chats"}</button>
+              {history.map(chat => <div key={chat.id}><button disabled={asking} onClick={() => void openHistory(chat.id)}>{new Date(chat.created_at).toLocaleString()}</button><button disabled={asking} onClick={() => void removeHistory(chat.id)}>{lang === "ar" ? "حذف" : "Delete"}</button></div>)}
+              {turns.map((turn, i) => <article key={i}><strong dir="auto">{turn.question}</strong><p dir="auto">{turn.answer}</p></article>)}
+              {viewer && token && <PdfViewer key={viewer.chunk_id} source={viewer} token={token} lang={lang} close={() => setViewer(undefined)}/>}
               {!answer && !asking && !error ? (
                 <div className="empty-answer">
                   <div className="empty-answer-icon"><Sparkles size={34} /></div>
@@ -306,7 +344,7 @@ export default function App() {
                           <span className="source-number">{source.number}</span>
                           <div className="source-content">
                             <strong>{source.filename}</strong>
-                            <span className="source-page">{t.page} {source.page_number}</span>
+                            <button type="button" className="source-page" onClick={() => setViewer(source)}>{t.page} {source.page_number} · {lang === "ar" ? "فتح المصدر" : "Open source"}</button>
                             <p dir="auto">{source.text}</p>
                           </div>
                         </article>

@@ -2,12 +2,16 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse, JSONResponse
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_user, get_resources, get_session
+from starlette.concurrency import run_in_threadpool
+
 from app.core.config import Settings, get_settings
 from app.core.resources import AppResources
-from app.db.models import User
+from app.db.models import Chunk, User
 from app.db.repositories import get_document, list_documents
 from app.schemas.documents import DocumentPublic
 from app.services.document_lifecycle import (
@@ -18,6 +22,7 @@ from app.services.document_lifecycle import (
     VectorCleanupFailed,
     delete_document,
     retry_document,
+    stored_path,
 )
 from app.services.documents import (
     DuplicateDocument,
@@ -26,6 +31,7 @@ from app.services.documents import (
     save_document,
 )
 from app.services.ingestion import ingest_document
+from app.services.viewer import render_page
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -130,3 +136,51 @@ async def remove_document(
         raise HTTPException(status_code=409, detail="Document is still processing") from exc
     except (VectorCleanupFailed, FileCleanupFailed) as exc:
         raise HTTPException(status_code=503, detail="Document cleanup is incomplete") from exc
+
+
+@router.get("/{document_id}/pdf")
+async def original_pdf(
+    document_id: UUID,
+    user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+    settings: Annotated[Settings, Depends(get_settings)],
+):
+    document = await get_document(session, user_id=user.id, document_id=document_id)
+    if document is None:
+        raise HTTPException(404, "Document not found")
+    path = stored_path(settings, user.id, document)
+    if not path.is_file():
+        raise HTTPException(404, "File not found")
+    return FileResponse(
+        path, media_type="application/pdf", filename=document.original_name,
+        headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
+    )
+
+
+@router.get("/{document_id}/pages/{number}")
+async def view_page(
+    document_id: UUID,
+    number: int,
+    user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+    settings: Annotated[Settings, Depends(get_settings)],
+    chunk_id: UUID | None = None,
+):
+    document = await get_document(session, user_id=user.id, document_id=document_id)
+    if document is None or document.status != "ready":
+        raise HTTPException(404, "Document not found")
+    path = stored_path(settings, user.id, document)
+    passage = None
+    if chunk_id is not None:
+        chunk = await session.scalar(select(Chunk).where(
+            Chunk.id == chunk_id, Chunk.user_id == user.id,
+            Chunk.document_id == document_id, Chunk.page_number == number,
+        ))
+        if chunk is None:
+            raise HTTPException(404, "Source not found")
+        passage = chunk.original_text
+    try:
+        result = await run_in_threadpool(render_page, path, number, passage)
+    except (IndexError, OSError) as exc:
+        raise HTTPException(404, "Page not found") from exc
+    return JSONResponse(result, headers={"Cache-Control": "no-store"})

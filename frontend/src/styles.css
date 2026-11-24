@@ -155,3 +155,9 @@ button:disabled { cursor: not-allowed; }
   .composer-wrap { padding: 12px 14px; }
   .login-card { padding: 25px 20px; }
 }
+
+.pdf-viewer { border: 1px solid #d4dbe5; padding: 12px; border-radius: 12px; margin: 12px 0; }
+.pdf-viewer header, .pdf-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.pdf-sheet { position: relative; width: 100%; line-height: 0; }
+.pdf-sheet img { display: block; width: 100%; height: auto; }
+.pdf-highlight { position: absolute; background: rgba(255, 210, 0, .35); pointer-events: none; }

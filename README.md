@@ -157,3 +157,7 @@ Answers are buffered and structurally validated before SSE release. Each claim m
 ## Conversation memory
 
 Authenticated clients can create, list, read and delete conversations. Pass `conversation_id` to `/qa/ask` to rewrite follow-up questions using recent questions. See [conversation memory](docs/conversations.md).
+
+## Interactive source viewer
+
+Open a citation to render its original page with exact word-coordinate highlights when available. See [viewer limitations](docs/pdf-viewer.md).

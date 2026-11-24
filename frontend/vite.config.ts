@@ -8,6 +8,7 @@ export default defineConfig({
       '/auth': 'http://127.0.0.1:8000',
       '/documents': 'http://127.0.0.1:8000',
       '/search': 'http://127.0.0.1:8000',
+      '/conversations': 'http://127.0.0.1:8000',
       '/qa': 'http://127.0.0.1:8000',
       '/health': 'http://127.0.0.1:8000',
     },

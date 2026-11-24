@@ -1,0 +1,3 @@
+# PDF viewer
+
+Authenticated routes return a private original PDF or a rasterized page with normalized word bounding boxes. The source chunk is checked against owner, document and page. The viewer matches the entire normalized chunk uniquely against the actual extracted page words; ambiguous or unmatched text, including many OCR and RTL cases, shows the source page without a highlight. No inferred coordinates are returned. The UI supports page navigation and return to the citation page. It also lists, opens and deletes saved conversations; older turns contain text only, not persisted citation mappings. Rendering is bounded to 1600 pixels on the longest edge. Browser integration and Arabic geometry coverage remain to be expanded.

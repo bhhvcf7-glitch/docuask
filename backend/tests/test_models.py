@@ -3,8 +3,10 @@ from sqlalchemy import ForeignKeyConstraint
 from app.db.models import Base
 
 
-def test_only_three_mvp_tables_are_defined() -> None:
-    assert set(Base.metadata.tables) == {"users", "documents", "chunks"}
+def test_current_schema_tables_are_defined() -> None:
+    assert set(Base.metadata.tables) == {
+        "users", "documents", "chunks", "conversations", "conversation_turns"
+    }
 
 
 def test_chunks_cannot_reference_a_document_owned_by_another_user() -> None:

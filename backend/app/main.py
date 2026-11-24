@@ -1,4 +1,5 @@
-from contextlib import asynccontextmanager
+import asyncio
+from contextlib import asynccontextmanager, suppress
 from time import perf_counter
 from uuid import uuid4
 
@@ -24,7 +25,7 @@ from app.core.security import verify_access_token
 from app.db.session import database_url
 from app.retrieval.embeddings import E5Embeddings, load_model
 from app.retrieval.vectors import VectorIndex
-from app.services.recovery import fail_stale_ingestions
+from app.services.recovery import fail_stale_ingestions, fail_stale_queued, recovery_loop
 
 log = structlog.get_logger(__name__)
 
@@ -39,6 +40,7 @@ async def lifespan(app: FastAPI):
 
     engine = create_async_engine(database_url(settings), pool_pre_ping=True)
     client = None
+    recovery_task: asyncio.Task[None] | None = None
     try:
         sessions = async_sessionmaker(engine, expire_on_commit=False)
         client = AsyncQdrantClient(url=settings.qdrant_url, timeout=30)
@@ -49,6 +51,7 @@ async def lifespan(app: FastAPI):
             await run_in_threadpool(load_model)
         await index.ensure_collection()
         await fail_stale_ingestions(settings, engine)
+        await fail_stale_queued(settings, engine)
 
         app.state.resources = AppResources(
             engine=engine,
@@ -57,12 +60,21 @@ async def lifespan(app: FastAPI):
             embeddings=embeddings,
             index=index,
         )
+        recovery_task = asyncio.create_task(recovery_loop(settings, engine))
         yield
     finally:
-        app.state.resources = None
-        if client is not None:
-            await client.close()
-        await engine.dispose()
+        try:
+            if recovery_task is not None:
+                recovery_task.cancel()
+                with suppress(asyncio.CancelledError):
+                    await recovery_task
+        finally:
+            app.state.resources = None
+            try:
+                if client is not None:
+                    await client.close()
+            finally:
+                await engine.dispose()
 
 
 def create_app() -> FastAPI:

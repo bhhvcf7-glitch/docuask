@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 from fastapi import FastAPI
 from pydantic import SecretStr
@@ -68,17 +70,34 @@ async def test_lifespan_initializes_once_and_closes_shared_resources(monkeypatch
     monkeypatch.setattr(entrypoint, "run_in_threadpool", in_thread)
     monkeypatch.setattr(entrypoint, "fail_stale_ingestions", recovery)
 
+    started = asyncio.Event()
+
+    async def queued(settings, engine):
+        calls.append("queued")
+
+    async def periodic(settings, engine):
+        started.set()
+        try:
+            await asyncio.Future()
+        finally:
+            assert not engine.disposed and not client.closed
+            calls.append("cancelled")
+
+    monkeypatch.setattr(entrypoint, "fail_stale_queued", queued)
+    monkeypatch.setattr(entrypoint, "recovery_loop", periodic)
     app = FastAPI()
     async with entrypoint.lifespan(app):
+        await asyncio.wait_for(started.wait(), timeout=2)
         resources = app.state.resources
         assert resources.engine is engine
         assert resources.qdrant is client
         assert resources.index.client is client
         assert resources.index.checked == 1
         assert resources.embeddings.dimension == 3
-        assert calls == ["preload", "recovery"]
+        assert calls == ["preload", "recovery", "queued"]
         assert not engine.disposed and not client.closed
 
+    assert calls[-1] == "cancelled"
     assert app.state.resources is None
     assert engine.disposed and client.closed
 
@@ -103,6 +122,7 @@ async def test_test_mode_can_defer_embedding_model_load(monkeypatch):
         return 0
 
     monkeypatch.setattr(entrypoint, "fail_stale_ingestions", recovery)
+    monkeypatch.setattr(entrypoint, "fail_stale_queued", recovery)
     app = FastAPI()
     async with entrypoint.lifespan(app):
         assert app.state.resources.index.checked == 1

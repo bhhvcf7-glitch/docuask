@@ -12,7 +12,7 @@ from app.core.config import Settings
 from app.db.models import Document, User
 from app.db.session import database_url
 from app.services.ingestion import ingest_document
-from app.services.recovery import fail_stale_ingestions
+from app.services.recovery import fail_stale_ingestions, fail_stale_queued
 
 pytestmark = [
     pytest.mark.asyncio,
@@ -80,6 +80,44 @@ async def test_startup_sweep_only_marks_old_processing_documents() -> None:
         async with maker() as session:
             assert (await session.get(Document, old_id)).status == "failed"
             assert (await session.get(Document, recent_id)).status == "processing"
+    finally:
+        async with maker.begin() as session:
+            await session.execute(delete(User).where(User.id == owner))
+        await engine.dispose()
+
+
+async def test_queued_recovery_is_idempotent() -> None:
+    settings = Settings(_env_file=None, stale_queued_minutes=30)
+    engine = create_async_engine(database_url(settings))
+    maker = async_sessionmaker(engine, expire_on_commit=False)
+    owner = uuid4()
+    cases = [(uuid4(), "queued", True), (uuid4(), "queued", False),
+             (uuid4(), "processing", True), (uuid4(), "ready", True)]
+    try:
+        async with maker.begin() as session:
+            session.add(User(id=owner, email=f"{owner}@example.com", password_hash="hash"))
+            await session.flush()
+            for doc_id, status, old in cases:
+                session.add(Document(
+                    id=doc_id, user_id=owner, original_name="file.pdf",
+                    storage_key=f"{owner}/{doc_id}.pdf", media_type="application/pdf",
+                    size_bytes=10, sha256=doc_id.hex * 2, status=status,
+                    status_changed_at=datetime.now(UTC) - timedelta(hours=2 if old else 0),
+                ))
+        await fail_stale_queued(settings, engine)
+        async with maker() as session:
+            recovered = await session.get(Document, cases[0][0])
+            assert recovered.status == "failed"
+            assert "did not start" in recovered.failure_reason
+            changed_at = recovered.status_changed_at
+            for doc_id, status, _ in cases[1:]:
+                assert (await session.get(Document, doc_id)).status == status
+        await fail_stale_queued(settings, engine)
+        await ingest_document(cases[0][0], owner, settings, sessions=maker)
+        async with maker() as session:
+            recovered = await session.get(Document, cases[0][0])
+            assert recovered.status == "failed"
+            assert recovered.status_changed_at == changed_at
     finally:
         async with maker.begin() as session:
             await session.execute(delete(User).where(User.id == owner))

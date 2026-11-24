@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     api_rate_limit: int = Field(default=180, ge=1, le=10000)
     storage_dir: Path = Path("storage")
     stale_processing_minutes: int = Field(default=30, ge=1, le=1440)
+    stale_queued_minutes: int = Field(default=30, ge=1, le=1440)
+    recovery_interval_seconds: int = Field(default=60, ge=1, le=3600)
     preload_embeddings: bool = True
     pdfium_fallback: bool = True
     ocr_enabled: bool = False

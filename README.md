@@ -153,3 +153,7 @@ Set `RERANK_ENABLED=true` with the embeddings extra installed. See [reranking an
 ## Grounded QA citation validation
 
 Answers are buffered and structurally validated before SSE release. Each claim must end with valid retrieved source numbers; invalid, missing or incomplete references cause refusal. See [limitations and contract](docs/grounded-qa.md).
+
+## Conversation memory
+
+Authenticated clients can create, list, read and delete conversations. Pass `conversation_id` to `/qa/ask` to rewrite follow-up questions using recent questions. See [conversation memory](docs/conversations.md).

@@ -94,3 +94,33 @@ class Chunk(Base):
     page_number: Mapped[int] = mapped_column(Integer, nullable=False)
     original_text: Mapped[str] = mapped_column(Text, nullable=False)
     normalized_text: Mapped[str] = mapped_column(Text, nullable=False)
+
+
+class Conversation(Base):
+    __tablename__ = "conversations"
+    __table_args__ = (Index("ix_conversations_owner_created", "user_id", "created_at"),)
+
+    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class ConversationTurn(Base):
+    __tablename__ = "conversation_turns"
+    __table_args__ = (
+        Index("ix_turns_conversation_created", "conversation_id", "created_at"),
+    )
+
+    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
+    conversation_id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False
+    )
+    question: Mapped[str] = mapped_column(Text, nullable=False)
+    answer: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )

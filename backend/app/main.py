@@ -9,6 +9,7 @@ from starlette.concurrency import run_in_threadpool
 from structlog.contextvars import bind_contextvars, clear_contextvars
 
 from app.api.routes.auth import router as auth_router
+from app.api.routes.conversations import router as conversations_router
 from app.api.routes.documents import router as documents_router
 from app.api.routes.health import router as health_router
 from app.api.routes.qa import router as qa_router
@@ -68,6 +69,7 @@ def create_app() -> FastAPI:
     app.include_router(health_router)
     app.include_router(auth_router)
     app.include_router(documents_router)
+    app.include_router(conversations_router)
     app.include_router(search_router)
     app.include_router(qa_router)
 

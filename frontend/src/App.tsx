@@ -60,6 +60,7 @@ export default function App() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [documents, setDocuments] = useState<DocumentItem[]>([])
+  const [conversationId, setConversationId] = useState<string | undefined>()
   const [question, setQuestion] = useState('')
   const [answer, setAnswer] = useState('')
   const [citations, setCitations] = useState<Citation[]>([])
@@ -143,6 +144,12 @@ export default function App() {
     const controller = new AbortController()
     abortRef.current = controller
     try {
+      let chat = conversationId
+      if (!chat) {
+        const created = await api<{ id: string }>('/conversations', token, { method: 'POST' })
+        chat = created.id
+        setConversationId(chat)
+      }
       await streamAnswer(token, prompt, controller.signal, (message) => {
         if (message.type === 'token') {
           setAnswer(old => old + message.payload.text)
@@ -153,7 +160,7 @@ export default function App() {
         } else if (message.type === 'error') {
           setError(message.payload.message)
         }
-      })
+      }, chat)
     } catch (cause) {
       if (!controller.signal.aborted) {
         setError(cause instanceof Error ? cause.message : t.error)
@@ -166,6 +173,7 @@ export default function App() {
 
   function signOut() {
     abortRef.current?.abort()
+    setConversationId(undefined)
     setToken(null)
     setUser(null)
     setDocuments([])
@@ -275,6 +283,7 @@ export default function App() {
             <div className="chat-heading">
               <div className="chat-icon"><MessageSquareText size={22} /></div>
               <div><h1>{t.askTitle}</h1><p>{t.askHelp}</p></div>
+              <button type="button" disabled={asking} onClick={() => { setConversationId(undefined); setAnswer(''); setCitations([]); setQuestion(''); setError('') }}>{lang === 'ar' ? 'محادثة جديدة' : 'New chat'}</button>
             </div>
             <div className="chat-body">
               {!answer && !asking && !error ? (

@@ -70,6 +70,7 @@ export async function streamAnswer(
   question: string,
   signal: AbortSignal,
   onEvent: (event: StreamEvent) => void,
+  conversationId?: string,
 ): Promise<void> {
   const response = await fetch('/qa/ask', {
     method: 'POST',
@@ -79,7 +80,7 @@ export async function streamAnswer(
       'Content-Type': 'application/json',
       Accept: 'text/event-stream',
     },
-    body: JSON.stringify({ question, limit: 5 }),
+    body: JSON.stringify({ question, limit: 5, conversation_id: conversationId }),
   })
   if (!response.ok) {
     const detail = await response.json().catch(() => ({}))

@@ -67,9 +67,8 @@ async def ask(
             provider=provider,
             disconnect=request.is_disconnected,
             search=retrieve,
-        )
+        )) as events:
             async for item in events:
-
                 if payload.conversation_id is None:
                     yield item
                     continue

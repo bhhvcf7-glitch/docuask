@@ -75,7 +75,7 @@ def summarize_answers(rows: list[dict]) -> dict:
         "citation_validity_among_answers": ratio(
             sum(row["citation_valid"] is True for row in answered), len(answered)),
         "gold_page_citation_rate_all_answerable": ratio(
-            sum(row["gold_page_cited"] is True for row in positive), len(positive)),
+            sum(row["outcome"] == "answered" and row["gold_page_cited"] is True for row in positive), len(positive)),
         "latency_ms_all_attempts": {
             "p50": percentile(latency, .5), "p95": percentile(latency, .95),
         } if latency else None,

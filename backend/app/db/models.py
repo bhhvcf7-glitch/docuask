@@ -13,6 +13,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -80,6 +81,10 @@ class Chunk(Base):
         CheckConstraint("ordinal >= 0", name="nonnegative_ordinal"),
         CheckConstraint("page_number >= 1", name="positive_page_number"),
         Index("ix_chunks_user_document", "user_id", "document_id"),
+        Index(
+            "ix_chunks_lexical", text("to_tsvector('simple'::regconfig, normalized_text)"),
+            postgresql_using="gin",
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)

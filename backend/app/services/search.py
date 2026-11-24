@@ -7,7 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import Settings
 from app.db.models import Chunk, Document
 from app.retrieval.embeddings import E5Embeddings
-from app.retrieval.vectors import VectorIndex
+from app.retrieval.fusion import reciprocal_rank_fusion
+from app.retrieval.sparse import lexical_search
+from app.retrieval.vectors import Match, VectorIndex
 
 
 class SearchUnavailable(Exception):
@@ -26,12 +28,28 @@ async def search_documents(
 ) -> list[dict]:
     if embeddings is None or index is None:
         raise SearchUnavailable("Search resources are not initialized")
+    hybrid = settings.retrieval_mode == "hybrid"
+    candidate_limit = min(100, limit * 4) if hybrid else limit
     vector = await embeddings.query(question)
     try:
-        hits = await index.search(user_id=user_id, vector=vector, limit=limit)
+        hits = await index.search(user_id=user_id, vector=vector, limit=candidate_limit)
+        if hybrid:
+            dense = await _resolve(session, user_id, hits)
+            sparse = await lexical_search(
+                session, user_id=user_id, question=question, limit=candidate_limit
+            )
+            scores = {hit['chunk_id']: hit['score'] for hit in dense}
+            missing = [chunk_id for chunk_id in sparse if chunk_id not in scores]
+            if missing:
+                rescored = await index.search(
+                    user_id=user_id, vector=vector, limit=len(missing), chunk_ids=missing
+                )
+                scores.update({hit.chunk_id: hit.score for hit in rescored})
+            ranked = reciprocal_rank_fusion([[hit['chunk_id'] for hit in dense], sparse])
+            hits = [Match(chunk_id, scores[chunk_id]) for chunk_id in ranked if chunk_id in scores]
     except (ResponseHandlingException, UnexpectedResponse, OSError) as exc:
         raise SearchUnavailable from exc
-    return await _resolve(session, user_id, hits)
+    return (await _resolve(session, user_id, hits))[:limit]
 
 
 async def _resolve(session: AsyncSession, user_id: UUID, hits: list) -> list[dict]:

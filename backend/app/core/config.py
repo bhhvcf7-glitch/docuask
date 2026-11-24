@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     ollama_url: str = "http://localhost:11434"
     openai_base_url: str = "https://api.openai.com/v1"
     openai_api_key: SecretStr | None = None
+    retrieval_mode: Literal["dense", "hybrid"] = "dense"
     qa_min_score: float = Field(default=0.45, ge=-1, le=1)
     qa_max_answer_chars: int = Field(default=10000, ge=100, le=100000)
 

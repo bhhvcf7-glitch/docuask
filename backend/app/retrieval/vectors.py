@@ -66,18 +66,24 @@ class VectorIndex:
         )
 
     async def search(
-        self, *, user_id: UUID, vector: list[float], limit: int = 5
+        self, *, user_id: UUID, vector: list[float], limit: int = 5,
+        chunk_ids: list[UUID] | None = None,
     ) -> list[Match]:
         if len(vector) != self.dimension:
             raise ValueError("Query vector dimension mismatch")
+        conditions = [models.FieldCondition(
+            key="user_id", match=models.MatchValue(value=str(user_id))
+        )]
+        if chunk_ids is not None:
+            if not chunk_ids:
+                return []
+            conditions.append(models.FieldCondition(
+                key="chunk_id", match=models.MatchAny(any=[str(item) for item in chunk_ids])
+            ))
         found = await self.client.query_points(
             collection_name=self.collection,
             query=vector,
-            query_filter=models.Filter(must=[
-                models.FieldCondition(
-                    key="user_id", match=models.MatchValue(value=str(user_id))
-                )
-            ]),
+            query_filter=models.Filter(must=conditions),
             limit=limit,
             with_payload=True,
             with_vectors=False,

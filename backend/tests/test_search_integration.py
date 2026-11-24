@@ -28,8 +28,9 @@ class FakeEmbeddings:
         return [1.0, 0.0, 0.0]
 
 
-async def test_search_resolves_only_ready_chunks_owned_by_requester() -> None:
-    settings = Settings(_env_file=None)
+@pytest.mark.parametrize("mode", ["dense", "hybrid"])
+async def test_search_resolves_only_ready_chunks_owned_by_requester(mode) -> None:
+    settings = Settings(_env_file=None, retrieval_mode=mode)
     engine = create_async_engine(database_url(settings))
     sessions = async_sessionmaker(engine, expire_on_commit=False)
     qdrant = AsyncQdrantClient(url=settings.qdrant_url)

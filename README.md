@@ -141,3 +141,7 @@ does not include them. No general Arabic extraction accuracy gain is claimed.
 ## License
 
 [MIT](LICENSE).
+
+## Optional hybrid retrieval
+
+Set `RETRIEVAL_MODE=hybrid` and apply Alembic migrations. Dense retrieval remains the default. See [hybrid retrieval design](docs/hybrid-retrieval.md).

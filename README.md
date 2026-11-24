@@ -169,3 +169,5 @@ Rotating opaque refresh tokens, bounded request rate limits, structured request 
 ## Production deployment candidate / التشغيل
 
 See [deployment and security review](docs/deployment.md) and [measured retrieval baseline](docs/eval/production-results.md). The HTTPS Docker stack is configured for a single host; no external deployment is claimed.
+
+[Release audit and outstanding gates](docs/release-audit.md)

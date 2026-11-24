@@ -4,6 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_user, get_resources, get_session
@@ -55,6 +56,7 @@ async def ask(
 
     async def stream():
         parts = []
+        buffered = []
         async for item in answer_events(
             session,
             user_id=owner,
@@ -72,6 +74,9 @@ async def ask(
             data = json.loads(item.splitlines()[1][6:])
             if kind == "token":
                 parts.append(data["text"])
+            if kind in {"token", "citations"}:
+                buffered.append(item)
+                continue
             if kind == "done" and parts:
                 if not await owned_conversation(session, owner, payload.conversation_id):
                     yield event("error", {"message": "Conversation no longer exists"})
@@ -80,7 +85,14 @@ async def ask(
                     conversation_id=payload.conversation_id,
                     question=payload.question, answer="".join(parts),
                 ))
-                await session.commit()
+                try:
+                    await session.commit()
+                except IntegrityError:
+                    await session.rollback()
+                    yield event("error", {"message": "Conversation could not be saved"})
+                    return
+                for saved in buffered:
+                    yield saved
             yield item
 
     return StreamingResponse(

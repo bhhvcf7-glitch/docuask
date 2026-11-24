@@ -3,22 +3,25 @@ export type TokenPair = { access_token: string; refresh_token: string }
 let pair: TokenPair | null = null
 let pending: Promise<string | null> | null = null
 let generation = 0
+let anchor: string | null = null
 
 export function setSession(next: TokenPair) {
   generation++
   pair = next
+  anchor = next.access_token
   pending = null
 }
 
 export function currentAccess(fallback: string | null) {
-  return pair?.access_token ?? fallback
+  return pair && fallback === anchor ? pair.access_token : fallback
 }
 
-export async function renewAccess(stale: string): Promise<string | null> {
-  if (!pair) return null
+export function sessionEpoch() { return generation }
+
+export async function renewAccess(stale: string, epoch = generation): Promise<string | null> {
+  if (!pair || epoch !== generation) return null
   if (pair.access_token !== stale) return pair.access_token
   if (pending) return pending
-  const epoch = generation
   const refresh = pair.refresh_token
   const task = (async () => {
     const response = await fetch('/auth/refresh', {
@@ -52,6 +55,7 @@ export function endSession() {
   const old = pair
   generation++
   pair = null
+  anchor = null
   pending = null
   if (old) void revoke(old.refresh_token)
 }

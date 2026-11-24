@@ -1,4 +1,4 @@
-import { currentAccess, renewAccess } from './session'
+import { currentAccess, renewAccess, sessionEpoch } from './session'
 
 export type DocumentStatus = 'queued' | 'processing' | 'ready' | 'failed'
 
@@ -32,12 +32,17 @@ export async function authorizedFetch(path: string, token: string | null, init: 
     if (key) headers.set('Authorization', 'Bearer ' + key)
     return fetch(path, { ...init, headers })
   }
+  const epoch = sessionEpoch()
   const key = token ? currentAccess(token) : null
   const response = await send(key)
+  if (epoch !== sessionEpoch()) throw new Error('Session changed')
   if (response.status !== 401 || !key || init.signal?.aborted) return response
-  const replacement = await renewAccess(key)
+  const replacement = await renewAccess(key, epoch)
+  if (epoch !== sessionEpoch()) throw new Error('Session changed')
   if (!replacement || init.signal?.aborted) return response
-  return send(replacement)
+  const retried = await send(replacement)
+  if (epoch !== sessionEpoch()) throw new Error('Session changed')
+  return retried
 }
 
 export async function api<T>(

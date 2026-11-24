@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import { api, authorizedFetch, streamAnswer, type Citation, type DocumentItem } from './api'
 
-import { endSession, setSession, type TokenPair } from './session'
+import { endSession, sessionEpoch, setSession, type TokenPair } from './session'
 import { PdfViewer } from './PdfViewer'
 
 type Lang = 'ar' | 'en'
@@ -78,8 +78,9 @@ export default function App() {
   const abortRef = useRef<AbortController | null>(null)
 
   const loadDocuments = useCallback(async (key: string) => {
+    const epoch = sessionEpoch()
     const list = await api<DocumentItem[]>('/documents', key)
-    setDocuments(list)
+    if (epoch === sessionEpoch()) setDocuments(list)
   }, [])
 
   useEffect(() => {
@@ -125,13 +126,16 @@ export default function App() {
 
   async function upload(file: File | undefined) {
     if (!file || !token) return
+    const epoch = sessionEpoch()
     setUploading(true)
     setError('')
     try {
       const form = new FormData()
       form.append('file', file)
       await api<DocumentItem>('/documents', token, { method: 'POST', body: form })
+      if (epoch !== sessionEpoch()) return
       await loadDocuments(token)
+      if (epoch !== sessionEpoch()) return
       if (fileRef.current) fileRef.current.value = ''
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : t.error)
@@ -147,6 +151,7 @@ export default function App() {
     setError('')
     setAnswer('')
     setCitations([])
+    const epoch = sessionEpoch()
     setAsking(true)
     const controller = new AbortController()
     abortRef.current = controller
@@ -154,10 +159,12 @@ export default function App() {
       let chat = conversationId
       if (!chat) {
         const created = await api<{ id: string }>('/conversations', token, { method: 'POST' })
+        if (epoch !== sessionEpoch() || controller.signal.aborted) return
         chat = created.id
         setConversationId(chat)
       }
       await streamAnswer(token, prompt, controller.signal, (message) => {
+        if (epoch !== sessionEpoch() || controller.signal.aborted) return
         if (message.type === 'token') {
           setAnswer(old => old + message.payload.text)
         } else if (message.type === 'citations') {
@@ -173,14 +180,20 @@ export default function App() {
         setError(cause instanceof Error ? cause.message : t.error)
       }
     } finally {
-      setAsking(false)
-      abortRef.current = null
+      if (abortRef.current === controller) {
+        setAsking(false)
+        abortRef.current = null
+      }
     }
   }
 
   function signOut() {
     endSession()
     abortRef.current?.abort()
+    abortRef.current = null
+    setAsking(false)
+    setUploading(false)
+    setError('')
     setConversationId(undefined)
     setViewer(undefined)
     setHistory([])
@@ -194,13 +207,19 @@ export default function App() {
   }
 
   async function refreshHistory() {
-    if (token) setHistory(await api<typeof history>('/conversations', token))
+    const epoch = sessionEpoch()
+    if (token) {
+      const list = await api<typeof history>('/conversations', token)
+      if (epoch === sessionEpoch()) setHistory(list)
+    }
   }
 
   async function openHistory(id: string) {
     if (!token || asking) return
     try {
+      const epoch = sessionEpoch()
       const chat = await api<{turns: typeof turns}>('/conversations/' + id, token)
+      if (epoch !== sessionEpoch()) return
       setConversationId(id)
       setTurns(chat.turns)
       setAnswer('')

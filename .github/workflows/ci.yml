@@ -58,8 +58,16 @@ jobs:
           JWT_SECRET: ci-only-signing-key-with-at-least-32-characters
       - name: Inspect Arabic PDF regression fixtures
         run: python scripts/inspect_arabic_fixtures.py
+      - name: Validate and generate evaluation PDFs without model downloads
+        run: python -m eval.run --check
       - name: Test
         run: python -m pytest backend/tests -q
+      - name: Publish open evaluation PDF corpus
+        uses: actions/upload-artifact@v4
+        with:
+          name: docuask-eval-pdfs
+          path: eval/corpus/pdfs/*.pdf
+          if-no-files-found: error
 
   frontend:
     runs-on: ubuntu-latest

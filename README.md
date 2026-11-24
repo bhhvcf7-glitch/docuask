@@ -17,7 +17,8 @@ Bilingual PDF question answering with citations. **MVP phase 8 and a minimal Rea
 | Client cancellation | Implemented with request-disconnect polling and async stream cleanup |
 | Minimal React UI | Implemented; CI TypeScript build and SSE parser tests |
 | Deployment | Not implemented |
-| Hit@k / MRR and latency benchmarks | Not measured |
+| Reproducible dense retrieval evaluation | Implemented; 4 synthetic public PDFs, 40 answerable and 8 unanswerable questions; no real model scores measured |
+| Hit@k / MRR and latency benchmarks | Script ready; measurements pending local run |
 
 [Architecture design](docs/design/architecture.md) · [MVP plan](docs/mvp-plan.md) · [Arabic PDF extraction](docs/arabic-extraction.md) · [Historical roadmap](docs/design/roadmap.md)
 
@@ -102,6 +103,19 @@ Citations now use short `[1]` or `[2]` tokens in the prompt and model output. Th
 ## V2 Phase 4: Arabic PDF extraction
 
 Three public Arabic PDF fixtures from jsPDF, PDF.js and Tabula are checked into the test suite. Their real pdfplumber output contains Arabic presentation forms and reversed-order words. The extraction quality check logs presentation forms and rejects high-confidence reversal, disconnected-letter or unmapped-glyph patterns rather than indexing unreliable source text. Selective Unicode NFKC decomposes Arabic presentation forms only in normalized text, never in original citation text. These heuristics can miss errors and do not replace OCR or correct visual reading order. See [observations, provenance and reproduction](docs/arabic-extraction.md). No Arabic CER/WER or retrieval-quality improvement is claimed.
+
+## V2 Phase 5: retrieval evaluation
+
+The public [evaluation corpus and runner](eval/README.md) contain four reproducible, **synthetic** PDF documents (two Arabic, two English), 40 answerable questions labeled with correct document and page, and eight unanswerable questions. This is a controlled baseline, **not** a representative set of independently published Arabic PDFs. GitHub Actions validates generated PDF text and labels and publishes the four PDFs as a build artifact, without running model inference. Actual dense retrieval measurements require a local CPU run. The script uses the existing pdfplumber, chunker, multilingual-e5-small and Qdrant vector indexing code, with local in-memory Qdrant. LLM answer quality is not measured; the refusal metric measures only the retrieval similarity gate.
+
+| Metric | multilingual-e5-small (dense retrieval) |
+| --- | --- |
+| hit@1 / hit@3 / hit@5 | Not measured |
+| MRR@5 | Not measured |
+| Unanswerable retrieval-gate refusal accuracy | Not measured |
+| Retrieval latency p50 / p95 | Not measured |
+
+To run the real model evaluation: `python -m pip install -e './backend[dev,embeddings]'` and `python -m eval.run --output docs/eval/results.local.json`. The resulting JSON contains per-query rankings, similarity scores and timing measurements. Review those results before adjusting `QA_MIN_SCORE` or the chunk size. See [evaluation details](docs/eval/README.md).
 
 ## License
 

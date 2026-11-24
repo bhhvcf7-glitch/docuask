@@ -13,3 +13,5 @@ coverage/
 *.pyc
 *.log
 storage/
+eval/corpus/pdfs/
+docs/eval/results*.json
